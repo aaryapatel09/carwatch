@@ -5,11 +5,16 @@ A working research prototype for reviewing activity around parked cars. It proce
 ## Start
 
 ```sh
-cd /Users/aaryapatel/carwatch
-.venv/bin/streamlit run app.py --server.port 8517
+cd carwatch
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.lock.txt
+streamlit run app.py --server.port 8517
 ```
 
-Open http://127.0.0.1:8517. Python 3.11, dependencies from requirements.lock.txt, public YOLO11 person/pose weights, and ffmpeg are installed on this machine. A fresh installation needs Python 3.11+, `pip install -r requirements.lock.txt`, and ffmpeg on PATH. First inference can download model weights. The server binds only to localhost.
+Open http://127.0.0.1:8517. Supported test runtime: Python 3.11. Install ffmpeg first (`brew install ffmpeg` on macOS, or `sudo apt-get install ffmpeg libgl1` on Ubuntu). First inference downloads public YOLO11 weights; no videos are uploaded. The server binds only to localhost. Run from a source checkout; this repository is not a packaged desktop application.
+
+The default data directory is `runtime/` in the checkout. Set `CARWATCH_DATA_DIR` to an absolute path before starting the app to use another directory. Test commands should use an isolated temporary directory. The checked-in lock is the tested dependency snapshot; GPU/Linux resolution can add platform-specific transitive dependencies. See [contributing](CONTRIBUTING.md) for development tools and [security](SECURITY.md) before running.
 
 ## What works
 
@@ -35,11 +40,11 @@ Open http://127.0.0.1:8517. Python 3.11, dependencies from requirements.lock.txt
 5. **Live camera:** explicitly start a local camera only when ready. It saves event snapshots and logs, not full video or audio. Stop manually or use the session time limit. Closing the tab does not stop an active session.
 6. **Settings:** manage local data. Deleting a recording does not untrain an existing model; delete/retrain affected models separately.
 
-The included example recording is a replay of a bundled Ultralytics example photo, explicitly marked `sample`. It verifies the CV pipeline but is **not** car-security validation and is excluded from real-data training.
+The optional integration example recording is a replay of a bundled Ultralytics example photo, explicitly marked `sample`. It verifies the CV pipeline but is **not** car-security validation and is excluded from real-data training.
 
 ## What was actually trained
 
-`runtime/models/synthetic-demo/` contains a custom GRU trained for 50 epochs on 192 generated feature sequences (4 classes × 16 examples × 3 splits). It learns generated movement patterns. Its reported scores are only on held-out generated patterns, not on real footage. The app refuses to apply this model to real recordings.
+Running `python demo.py` creates `runtime/models/synthetic-demo/`, a custom GRU trained for 50 epochs on 192 generated feature sequences (4 classes × 16 examples × 3 splits). It learns generated movement patterns. Its reported scores are only on held-out generated patterns, not on real footage. The app refuses to apply this model to real recordings.
 
 The person/pose detector is pretrained YOLO11n, not custom-trained by this project. **No custom model has yet been trained on real car-door activity.** Real training requires footage and reviewed labels. The minimum of two examples per class per split is an execution sanity check, not sufficient data for reliable deployment.
 
@@ -66,17 +71,21 @@ The older `train_behavior.py` CSV logistic-regression baseline remains available
 .venv/bin/python scripts/verify_flow.py
 ```
 
-The integration script runs actual pose CV on a bundled still-image replay, verifies event clips, annotated review clips, persistence and dataset export, then restores its training label to unreviewed. It leaves a clearly named sample run to inspect. It is not a motion, car-contact, night-vision or field benchmark.
+The integration script runs actual pose CV on a bundled still-image replay, verifies event clips, annotated review clips, persistence and dataset export, then restores its training label to unreviewed. By default it uses an isolated temporary directory. Pass `--keep-sample` to retain a clearly named sample run in your workspace. It is not a motion, car-contact, night-vision or field benchmark.
 
 Before field use, evaluate full independent recordings, including ordinary negative footage, owners, neighboring-car loading, children, carts, pets, rain, shadows, low light and occlusion. Measure false alerts per hour, event recall, alert delay, tracking continuity and blind spots. Window classification accuracy alone cannot establish these. Reusing the test split for model selection invalidates its held-out role; reserve fresh sessions for later experiments.
 
 ## Data and privacy
 
-Everything is under `runtime/`, ignored by Git: uploaded source video, event/track clips, features, human labels, models, and manifests. Source audio is not included in derived clips but remains in the saved original. No face recognition, reidentification across cameras, external video upload, remote notification service, or weapon actuation is connected. Model downloads are inbound only. Local files are not encrypted by this app; use device storage protection as appropriate. Data is retained until deletion in Settings.
+Everything is under `runtime/`, ignored by Git: uploaded source video, event/track clips, features, human labels, models, and manifests. Source audio is not included in derived clips but remains in the saved original. No face recognition, reidentification across cameras, external video upload, remote notification service, or weapon actuation is connected. Model downloads are inbound only. Camera workers run in a separate process with a parent-enforced time limit so Stop can terminate a blocked driver. Local files are not encrypted by this app; use device storage protection as appropriate. Data is retained until deletion in Settings.
 
 ## Remaining product work
 
 This is a local research app with recorded-video analysis and an untested-on-hardware local camera monitor. Universal mounting, automotive power/temperature qualification, robust multi-camera live ingestion, authenticated remote access, LTE/offline behavior, phone push delivery, production retention/access controls, real behavior training, and field evaluation are not complete. No absence of alerts should be displayed as a guarantee of safety.
+
+## License
+
+Project code is licensed under [AGPL-3.0-only](LICENSE). Pretrained model weights and third-party libraries retain their own terms. No model weights or recordings are included in the repository.
 
 ## Sources and licensing
 

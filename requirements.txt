@@ -1,5 +1,10 @@
+# Direct runtime dependencies. Use requirements.lock.txt for the tested snapshot.
 ultralytics>=8.3,<9
 streamlit>=1.40,<2
 scikit-learn>=1.5,<2
 lap>=0.5,<1
-pytest>=8,<10
+numpy>=1.26,<3
+pandas>=2.2,<4
+opencv-python>=4.10,<6,!=4.13.0.90
+torch>=2.6,<3
+filelock>=3.16,<5
