@@ -63,6 +63,8 @@ The batch manifest is an example: replace file paths and calibration with actual
 
 The older `train_behavior.py` CSV logistic-regression baseline remains available for comparison, but is not used by the dashboard. Its model is not loaded by the new pipeline.
 
+Each custom model's `model.json` names its weight and dataset-manifest files. Training writes a new generation, then atomically replaces that card only after both files are ready. An interrupted replacement leaves the prior model usable. Older generations remain in that model folder until the model is deleted in Settings; include the whole folder when backing up a model. Earlier checkpoints using `weights.pt` remain readable.
+
 ## Validation
 
 ```sh

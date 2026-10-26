@@ -12,7 +12,7 @@ Target: a reproducible GitHub repository for the complete current Carwatch proto
 | Custom training works | Generated-pattern exercise and checkpoint/inference tests; **no real car-door model trained** |
 | Failure paths are handled | Camera process termination, unavailable camera, invalid video metadata, failed codecs, interrupted evidence writes, and concurrent-review regressions |
 | Data isolation is preserved | Explicit dataset origin, session/hash split validation, duplicate-run checks, isolated UI tests |
-| Model artifacts remain consistent | File lock, staged writes, weights-only loading, and checksum/card validation |
+| Model artifacts remain consistent | File lock, immutable generation artifacts with atomic card publication, replacement-failure regressions, weights-only loading, and checksum/card validation |
 | Credentials/private footage stay out of Git | Ignore rules plus tracked-file hygiene check; review the final diff before publication |
 | Licensing and contributor/security guidance exist | LICENSE, CONTRIBUTING.md, SECURITY.md and source/model-license notes |
 | CI definitions validate | Pinned official action revisions, least-privilege jobs, local actionlint check |

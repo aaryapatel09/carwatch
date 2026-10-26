@@ -55,10 +55,6 @@ def new_run(source, config, session_id, split="train", origin="real", root=ROOT)
     ):
         raise ValueError("Recording group and origin are required")
     source = Path(source)
-    h = hashlib.sha256()
-    with source.open("rb") as f:
-        for block in iter(lambda: f.read(1024 * 1024), b""):
-            h.update(block)
     run_id = uuid.uuid4().hex
     out = run_dir(run_id, root)
     out.mkdir(parents=True)
@@ -71,12 +67,17 @@ def new_run(source, config, session_id, split="train", origin="real", root=ROOT)
         session_id=session_id.strip(),
         split=split,
         origin=origin,
-        video_hash=h.hexdigest(),
         source=source_name,
         config=config,
     )
     try:
         shutil.copyfile(source, out / source_name)
+        # Fingerprint the saved snapshot, even if the source changed during import.
+        h = hashlib.sha256()
+        with (out / source_name).open("rb") as f:
+            for block in iter(lambda: f.read(1024 * 1024), b""):
+                h.update(block)
+        info["video_hash"] = h.hexdigest()
         write_json(out / "meta.json", info)
     except Exception:
         shutil.rmtree(out)

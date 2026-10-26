@@ -102,7 +102,7 @@ def test_checkpoint_integrity_and_label_order(tmp_path):
     write_json(tmp_path / "model.json", card)
     with pytest.raises(ValueError, match="schema"):
         Predictor(tmp_path, allow_demo=True)
-    with (tmp_path / "weights.pt").open("ab") as f:
+    with (tmp_path / card["weights_file"]).open("ab") as f:
         f.write(b"changed")
     with pytest.raises(ValueError, match="integrity"):
         Predictor(tmp_path, allow_demo=True)

@@ -245,6 +245,8 @@ class LiveMonitor:
                 return
             if self.timer:
                 self.timer.cancel()
+            if self.messages is None and not self.process.is_alive():
+                return  # Repeated Stop and an already-fired watchdog are harmless.
             self.stop_event.set()
             self._drain()
             self.process.join(timeout=1.0)
@@ -258,9 +260,24 @@ class LiveMonitor:
             # A terminated producer can corrupt its pipe; do not read it after force-stop.
             if not forced:
                 self._drain()
-            self.messages.close()
+            if self.messages is not None:
+                self.messages.close()
             self.messages = None
-            self._state.update(status="stopped", frame=None)
+            if self.process.is_alive():
+                self._state.update(
+                    status="stopping",
+                    frame=None,
+                    error="Camera process did not exit; stop is not confirmed",
+                )
+            else:
+                # The queue's final update can be dropped during worker shutdown.
+                # Read the durable record before saving any parent-side stop state.
+                final = read_json(self.out / "session.json", {})
+                self._state.update(final, frame=None)
+                if self._state["status"] not in ("stopped", "error"):
+                    self._state["status"] = "stopped" if forced else "error"
+                    if not forced:
+                        self._state["error"] = "Camera process exited before reporting completion"
             if forced:
                 self._state["warning"] = (
                     "Camera process required a forced stop; the latest unsaved frame may be lost"

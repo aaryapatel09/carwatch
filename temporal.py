@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import tempfile
+import uuid
 from pathlib import Path
 
 import numpy as np
@@ -190,16 +191,34 @@ def fit(rows, out, epochs=60, allow_synthetic=False, progress=None):
     # State dict only; inference uses weights_only to avoid arbitrary pickle objects.
     with tempfile.TemporaryDirectory(dir=out.parent, prefix=".model-") as tmp:
         staged = Path(tmp)
-        torch.save({"state_dict": best, "mean": mean, "std": std}, staged / "weights.pt")
-        report["weights_sha256"] = hashlib.sha256((staged / "weights.pt").read_bytes()).hexdigest()
+        generation = uuid.uuid4().hex
+        report["weights_file"] = f"weights-{generation}.pt"
+        report["manifest_file"] = f"dataset-{generation}.json"
+        torch.save({"state_dict": best, "mean": mean, "std": std}, staged / report["weights_file"])
+        report["weights_sha256"] = hashlib.sha256(
+            (staged / report["weights_file"]).read_bytes()
+        ).hexdigest()
         write_json(staged / "model.json", report)
         write_json(
-            staged / "dataset_manifest.json",
+            staged / report["manifest_file"],
             [{k: v for k, v in r.items() if k != "sequence"} for r in rows],
         )
         with FileLock(str(out.parent / (out.name + ".lock"))):
-            for name in ("weights.pt", "dataset_manifest.json", "model.json"):
-                os.replace(staged / name, out / name)
+            published = []
+            try:
+                for name in (report["weights_file"], report["manifest_file"]):
+                    os.replace(staged / name, out / name)
+                    published.append(out / name)
+                # Commit the complete generation with one atomic replacement. Never
+                # overwrite artifacts referenced by the currently published card.
+                os.replace(staged / "model.json", out / "model.json")
+            except BaseException:
+                for path in published:
+                    try:
+                        path.unlink(missing_ok=True)
+                    except OSError:
+                        pass  # Unreferenced files cannot invalidate the old model.
+                raise
     return report
 
 
@@ -208,14 +227,23 @@ class Predictor:
         path = Path(path)
         with FileLock(str(path.parent / (path.name + ".lock"))):
             self.card = json.loads((path / "model.json").read_text())
+            name = self.card.get("weights_file", "weights.pt")
+            if (
+                not isinstance(name, str)
+                or Path(name).name != name
+                or "\\" in name
+                or not name.endswith(".pt")
+            ):
+                raise ValueError("Invalid checkpoint filename")
+            weights_path = path / name
             if (
                 self.card.get("weights_sha256")
-                != hashlib.sha256((path / "weights.pt").read_bytes()).hexdigest()
+                != hashlib.sha256(weights_path.read_bytes()).hexdigest()
             ):
                 raise ValueError(
                     "Checkpoint integrity mismatch; retrain or restore the complete model"
                 )
-            weights = torch.load(path / "weights.pt", map_location="cpu", weights_only=True)
+            weights = torch.load(weights_path, map_location="cpu", weights_only=True)
         if (
             self.card.get("schema") != SCHEMA
             or self.card.get("features") != NAMES

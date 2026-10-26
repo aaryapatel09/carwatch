@@ -4,7 +4,7 @@ Story: load a recording, calibrate its view, run pose tracking, review saved evi
 
 ## Current evidence
 
-- **62 tests passed** in a newly created Python 3.11 environment installed from `requirements-dev.txt` and the checked-in runtime lock. `pip check` found no broken requirements.
+- **72 tests passed** in a separate clean Python 3.11 environment installed from `requirements-dev.txt` and the checked-in runtime lock. `pip check` found no broken requirements.
 - Selected core-module statement/branch coverage is **88%**. This includes rule logic, feature extraction, storage, training, media, vision and live-control modules; it is not whole-product accuracy or safety coverage.
 - All six interface sections render in an isolated Streamlit AppTest process. Label saves persist; sample footage is excluded from real training; Start camera is disabled without explicit consent.
 - Lint, formatting and `git diff --check` pass. Workflow definitions pass official **actionlint v1.7.12** after fixing a disallowed expression context.
@@ -18,12 +18,14 @@ Story: load a recording, calibrate its view, run pose tracking, review saved evi
 
 - A blocked camera driver can no longer indefinitely hold the UI's Stop operation: capture runs in a separate process with a parent watchdog and force-stop fallback. Tests kill and restart an intentionally hung fake worker without opening a camera.
 - Camera unavailable/disconnect paths preserve an error state and release the device. Preview queue size and frame dimensions are bounded.
+- Repeated Stop calls are harmless. Stop and the watchdog reconcile the final saved session before reporting completion, preserving events and disconnect errors even if the last queue message was dropped.
 - Invalid detections break continuous-presence evidence instead of bridging a detection gap.
 - Model load failures occur before opening video; detector and callback errors release video resources.
 - Failed screenshot writes cannot report successful evidence capture. Failed ffmpeg exports preserve any previous clip and clean partial files.
 - Independent labels from concurrent browser sessions are merged under a file lock rather than replacing a stale whole report.
 - Duplicate analyses of the same recording cannot inflate a training dataset by changing track IDs.
-- Custom models validate feature/label order, normalization, and weight checksum. Model writes are staged and readers are locked during replacement.
+- Custom models validate feature/label order, normalization, and weight checksum. Each update publishes uniquely named artifacts before atomically switching the model card; fault injection at all three publication steps confirms the old model remains usable after failure. Previous fixed-filename checkpoints remain readable.
+- Recording fingerprints are calculated from the saved copy, so a source change during import cannot leave a fingerprint describing different bytes.
 - Tests and optional CV integration use isolated data directories. No user camera was activated.
 
 ## Outstanding evidence
