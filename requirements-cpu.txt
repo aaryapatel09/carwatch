@@ -1,0 +1,3 @@
+# Linux CPU build constraints for CI. Install from the official PyTorch CPU index.
+torch==2.14.1+cpu
+torchvision==0.29.1+cpu

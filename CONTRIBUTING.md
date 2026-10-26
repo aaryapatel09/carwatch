@@ -8,4 +8,4 @@ Do not commit recordings, snapshots, credentials, model weights, generated model
 
 Describe activity, not inferred intention. A wrist overlapping an image region does not prove contact. Do not present generated-pattern accuracy as real-world performance or describe an absence of events as a safety guarantee.
 
-The main CI suite is independent of model downloads. The manual CV integration workflow downloads official public model weights. Both workflows run without repository secrets. Running them on GitHub is still required before calling a particular hosted commit green.
+The main CI suite is independent of model downloads. The manual CV integration workflow downloads official public model weights. Both workflows run without repository secrets and use official PyTorch CPU builds constrained by `requirements-cpu.txt`; keep their base versions aligned with `requirements.lock.txt`. Running them on GitHub is required before calling a particular hosted commit green.

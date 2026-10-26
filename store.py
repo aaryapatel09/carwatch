@@ -5,10 +5,11 @@ import json
 import os
 import shutil
 import uuid
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
-from filelock import FileLock
+from filelock import FileLock, Timeout
 
 from config import CameraConfig
 
@@ -90,7 +91,18 @@ def list_runs(root=ROOT):
     for path in (Path(root) / "runs").glob("*/meta.json"):
         item = read_json(path)
         if item:
-            result.append(item)
+            if item.get("status") == "processing" and item.get("analysis_lease") == 1:
+                try:
+                    with _run_lock(path.parent):
+                        # A released OS lock is evidence that this analysis no
+                        # longer owns the run, even after an ungraceful exit.
+                        item = read_json(path)
+                        if item and item.get("status") == "processing":
+                            item["status"] = "interrupted"
+                except Timeout:
+                    pass
+            if item:
+                result.append(item)
     return sorted(result, key=lambda x: x["created"], reverse=True)
 
 
@@ -100,15 +112,47 @@ def set_status(out, status, **fields):
     write_json(Path(out) / "meta.json", info)
 
 
+def _run_lock(out, timeout=0):
+    out = Path(out)
+    # Keep the lock outside the deletable directory to preserve one lock inode.
+    locks = out.parent / ".locks"
+    locks.mkdir(parents=True, exist_ok=True)
+    return FileLock(str(locks / (out.name + ".lock")), timeout=timeout)
+
+
+@contextmanager
+def analysis_session(out):
+    """Own a run until complete; OS locks also release if the process crashes."""
+    out = Path(out)
+    lock = _run_lock(out)
+    try:
+        lock.acquire()
+    except Timeout as exc:
+        raise ValueError("This recording is already being analyzed") from exc
+    try:
+        if not (out / "meta.json").is_file():
+            raise ValueError("Recording has been deleted")
+        set_status(out, "processing", analysis_lease=1, error=None)
+        try:
+            yield
+        except BaseException as exc:
+            set_status(out, "failed", error=str(exc) or type(exc).__name__)
+            raise
+        else:
+            set_status(out, "complete", error=None)
+    finally:
+        lock.release()
+
+
 def save_review(out, window_id, label):
     from features import LABELS
 
     if label not in LABELS + ["unreviewed", "exclude"]:
         raise ValueError("Unknown activity label")
     out = Path(out)
-    if not out.is_dir():
-        raise ValueError("Recording has been deleted")
-    with FileLock(str(out / ".review.lock")):
+    with _run_lock(out, timeout=10):
+        if not out.is_dir():
+            raise ValueError("Recording has been deleted")
         data = read_json(out / "windows.json", [])
         item = next((item for item in data if item["id"] == window_id), None)
         if item is None:
@@ -129,9 +173,9 @@ def save_event_review(out, event_id, review):
     ):
         raise ValueError("Unknown event review")
     out = Path(out)
-    if not out.is_dir():
-        raise ValueError("Recording has been deleted")
-    with FileLock(str(out / ".review.lock")):
+    with _run_lock(out, timeout=10):
+        if not out.is_dir():
+            raise ValueError("Recording has been deleted")
         report = read_json(out / "report.json", {})
         event = next((item for item in report.get("events", []) if item["id"] == event_id), None)
         if event is None:
@@ -163,7 +207,14 @@ def dataset_rows(root=ROOT, real_only=False):
 
 def delete_run(run_id, root=ROOT):
     out = run_dir(run_id, root)
-    if out.exists():
-        if read_json(out / "meta.json", {}).get("status") == "processing":
-            raise ValueError("Stop analysis before deleting a recording")
-        shutil.rmtree(out)
+    try:
+        with _run_lock(out):
+            if out.exists():
+                meta = read_json(out / "meta.json", {})
+                if meta.get("status") == "processing" and meta.get("analysis_lease") != 1:
+                    raise ValueError("Stop analysis before deleting a recording")
+                shutil.rmtree(out)
+    except Timeout as exc:
+        raise ValueError(
+            "Wait for analysis or review to finish before deleting a recording"
+        ) from exc

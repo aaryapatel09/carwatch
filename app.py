@@ -15,6 +15,7 @@ from features import LABELS, NAMES
 from media import extract_track_clip
 from store import (
     ROOT,
+    analysis_session,
     dataset_rows,
     delete_run,
     list_runs,
@@ -23,7 +24,6 @@ from store import (
     run_dir,
     save_event_review,
     save_review,
-    set_status,
     write_json,
 )
 from vision import analyze
@@ -284,7 +284,6 @@ elif page == "Analyze video":
                 try:
                     config.validate()
                     info, out = new_run(source, config.to_dict(), session, split)
-                    set_status(out, "processing")
                     bar = st.progress(0.0)
                     preview = st.empty()
 
@@ -292,15 +291,15 @@ elif page == "Analyze video":
                         bar.progress(value)
                         preview.image(img, channels="BGR", width=800)
 
-                    report = analyze(
-                        out / info["source"],
-                        out,
-                        config=config,
-                        max_seconds=limit,
-                        progress=progress,
-                        model_path=models.get(selected),
-                    )
-                    set_status(out, "complete")
+                    with analysis_session(out):
+                        report = analyze(
+                            out / info["source"],
+                            out,
+                            config=config,
+                            max_seconds=limit,
+                            progress=progress,
+                            model_path=models.get(selected),
+                        )
                     bar.progress(1.0)
                     st.success(
                         f"Saved {len(report['events'])} activity events and {len(read_json(out / 'windows.json'))} review windows. Open Review & label."
@@ -308,8 +307,6 @@ elif page == "Analyze video":
                     for warning in report["warnings"]:
                         st.warning(warning)
                 except Exception as exc:
-                    if out:
-                        set_status(out, "failed", error=str(exc))
                     st.error(f"Analysis failed: {exc}")
 
 elif page == "Live camera":
@@ -675,11 +672,14 @@ elif page == "Settings":
             "Delete this source recording, its clips, events and training labels."
         )
         if st.button("Delete selected recording", disabled=not confirm):
-            delete_run(rid)
-            st.success(
-                "Recording removed. Already trained models are unchanged; retrain or delete them if their data should be removed."
-            )
-            st.rerun()
+            try:
+                delete_run(rid)
+                st.success(
+                    "Recording removed. Already trained models are unchanged; retrain or delete them if their data should be removed."
+                )
+                st.rerun()
+            except (ValueError, OSError) as exc:
+                st.error(str(exc))
     st.subheader("Live session records")
     live_paths = {
         p.parent.name: p.parent

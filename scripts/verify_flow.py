@@ -14,11 +14,11 @@ from config import CameraConfig
 from media import extract_track_clip
 from store import (
     ROOT,
+    analysis_session,
     dataset_rows,
     new_run,
     read_json,
     save_review,
-    set_status,
     write_json,
 )
 from vision import analyze
@@ -49,8 +49,8 @@ with tempfile.TemporaryDirectory() as temp:
     meta, out = new_run(
         source, config.to_dict(), "bundled-image-replay", "train", "sample", root=data_root
     )
-    set_status(out, "processing")
-    report = analyze(out / meta["source"], out, config=config, max_seconds=10)
+    with analysis_session(out):
+        report = analyze(out / meta["source"], out, config=config, max_seconds=10)
     windows = read_json(out / "windows.json")
     assert report["sampled_frames"] == 40
     assert report["events"] and windows
@@ -68,7 +68,6 @@ with tempfile.TemporaryDirectory() as temp:
     ok, frame = cap.read()
     cap.release()
     assert ok
-    set_status(out, "complete")
     save_review(out, window["id"], "ordinary_activity")
     assert any(r["run_id"] == meta["id"] for r in dataset_rows(data_root))
     save_review(out, window["id"], "unreviewed")

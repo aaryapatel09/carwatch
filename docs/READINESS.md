@@ -2,7 +2,7 @@
 
 Target: a reproducible GitHub repository for the complete current Carwatch prototype, with its implemented behavior tested and unsupported capabilities stated accurately. The broader request for a perfect, fully validated safety system remains unproven.
 
-## Evidence required before publication
+## Release evidence
 
 | Requirement | Evidence / status |
 |---|---|
@@ -16,7 +16,7 @@ Target: a reproducible GitHub repository for the complete current Carwatch proto
 | Credentials/private footage stay out of Git | Ignore rules plus tracked-file hygiene check; review the final diff before publication |
 | Licensing and contributor/security guidance exist | LICENSE, CONTRIBUTING.md, SECURITY.md and source/model-license notes |
 | CI definitions validate | Pinned official action revisions, least-privilege jobs, local actionlint check |
-| Hosted CI is green | **Not yet established: no GitHub remote or workflow run exists** |
+| Hosted CI is green | Private repository created. Inspect [repository checks](https://github.com/aaryapatel09/carwatch/actions/workflows/ci.yml) and [CV integration](https://github.com/aaryapatel09/carwatch/actions/workflows/cv-integration.yml) for the commit being released; the initial CUDA installation failure prompted explicit CPU builds. |
 | Actual camera hardware works | **Not established: no physical camera activated** |
 | Behavior detection works on real independent footage | **Not established: suitable labeled recordings and field evaluation are absent** |
 | Universal mounting, power, heat, LTE and phone delivery work | **Not implemented or validated** |
@@ -24,7 +24,7 @@ Target: a reproducible GitHub repository for the complete current Carwatch proto
 
 ## Next evidence needed
 
-1. Run the checked-in workflows on the intended GitHub repository; inspect the results for the exact published commit.
+1. Verify both checked-in workflows pass for the exact commit being released.
 2. Exercise opt-in camera acquisition, preview, automatic time limit, explicit Stop and disconnect behavior with intended hardware.
 3. Collect permissioned, independently split car-side recordings with ordinary activity and target interactions; review consistent labels and train/evaluate real models.
 4. Measure event recall, false alerts per hour, latency, low-light/weather behavior and blind spots using complete independent recordings, not only selected positive windows.

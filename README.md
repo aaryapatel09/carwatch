@@ -16,6 +16,16 @@ Open http://127.0.0.1:8517. Supported test runtime: Python 3.11. Install ffmpeg 
 
 The default data directory is `runtime/` in the checkout. Set `CARWATCH_DATA_DIR` to an absolute path before starting the app to use another directory. Test commands should use an isolated temporary directory. The checked-in lock is the tested dependency snapshot; GPU/Linux resolution can add platform-specific transitive dependencies. See [contributing](CONTRIBUTING.md) for development tools and [security](SECURITY.md) before running.
 
+For a Linux CPU-only installation, avoid the larger default CUDA dependencies by installing the pinned CPU builds first:
+
+```sh
+python -m pip install --no-deps --index-url https://download.pytorch.org/whl/cpu -r requirements-cpu.txt
+python -m pip install -r requirements.lock.txt -c requirements-cpu.txt
+python -m pip check
+```
+
+GitHub CI uses this CPU setup. macOS uses the normal installation above.
+
 ## What works
 
 - Saved per-camera calibration and thresholds, without assuming a particular car model.
@@ -38,7 +48,7 @@ The default data directory is `runtime/` in the checkout. Set `CARWATCH_DATA_DIR
 3. **Review & label:** inspect event clips and save event feedback. In Training windows, prepare an annotated clip, check the selected track, and choose a human activity label. Event feedback and training labels are separate.
 4. **Train models:** review label counts and dataset checks. Train on actual reviewed recordings when ready. Real models appear in the model registry and the analysis selector.
 5. **Live camera:** explicitly start a local camera only when ready. It saves event snapshots and logs, not full video or audio. Stop manually or use the session time limit. Closing the tab does not stop an active session.
-6. **Settings:** manage local data. Deleting a recording does not untrain an existing model; delete/retrain affected models separately.
+6. **Settings:** manage local data. Active analyses and reviews are protected from deletion. Interrupted analyses are identified by their released process lock and can be deleted. Deleting a recording does not untrain an existing model; delete/retrain affected models separately.
 
 The optional integration example recording is a replay of a bundled Ultralytics example photo, explicitly marked `sample`. It verifies the CV pipeline but is **not** car-security validation and is excluded from real-data training.
 

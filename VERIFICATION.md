@@ -4,7 +4,7 @@ Story: load a recording, calibrate its view, run pose tracking, review saved evi
 
 ## Current evidence
 
-- **72 tests passed** in a separate clean Python 3.11 environment installed from `requirements-dev.txt` and the checked-in runtime lock. `pip check` found no broken requirements.
+- **75 tests passed** in a separate clean Python 3.11 environment installed from `requirements-dev.txt` and the checked-in runtime lock. `pip check` found no broken requirements.
 - Selected core-module statement/branch coverage is **88%**. This includes rule logic, feature extraction, storage, training, media, vision and live-control modules; it is not whole-product accuracy or safety coverage.
 - All six interface sections render in an isolated Streamlit AppTest process. Label saves persist; sample footage is excluded from real training; Start camera is disabled without explicit consent.
 - Lint, formatting and `git diff --check` pass. Workflow definitions pass official **actionlint v1.7.12** after fixing a disallowed expression context.
@@ -23,6 +23,7 @@ Story: load a recording, calibrate its view, run pose tracking, review saved evi
 - Model load failures occur before opening video; detector and callback errors release video resources.
 - Failed screenshot writes cannot report successful evidence capture. Failed ffmpeg exports preserve any previous clip and clean partial files.
 - Independent labels from concurrent browser sessions are merged under a file lock rather than replacing a stale whole report.
+- Analysis uses an OS-held run lock. A killed analysis process releases ownership; interrupted runs can be identified and removed. Deletion cannot race a label save or recreate deleted data. Regression tests terminate a real test subprocess to verify recovery.
 - Duplicate analyses of the same recording cannot inflate a training dataset by changing track IDs.
 - Custom models validate feature/label order, normalization, and weight checksum. Each update publishes uniquely named artifacts before atomically switching the model card; fault injection at all three publication steps confirms the old model remains usable after failure. Previous fixed-filename checkpoints remain readable.
 - Recording fingerprints are calculated from the saved copy, so a source change during import cannot leave a fingerprint describing different bytes.
@@ -30,6 +31,8 @@ Story: load a recording, calibrate its view, run pose tracking, review saved evi
 
 ## Outstanding evidence
 
-No GitHub remote or hosted workflow run exists. No physical camera acquisition, real car-door training data, independent behavior benchmark, field false-alert rate, phone delivery, LTE integration, universal mounting, or power/heat qualification has been verified. Those gaps prevent a claim of complete product readiness or “100% perfection.”
+The private [GitHub repository](https://github.com/aaryapatel09/carwatch) exists. The first hosted test run exhausted the runner's disk while installing CUDA dependencies; the workflows now select the pinned official CPU builds. Check the [repository workflow](https://github.com/aaryapatel09/carwatch/actions/workflows/ci.yml) and [CV integration workflow](https://github.com/aaryapatel09/carwatch/actions/workflows/cv-integration.yml) for the exact commit's result.
+
+No physical camera acquisition, real car-door training data, independent behavior benchmark, field false-alert rate, phone delivery, LTE integration, universal mounting, or power/heat qualification has been verified. Those gaps prevent a claim of complete product readiness or “100% perfection.”
 
 See [test map](docs/TESTING.md) and [release-readiness audit](docs/READINESS.md). Local generated evidence lives under the configured data directory and is excluded from Git.

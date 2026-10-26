@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 from config import CameraConfig
-from store import ROOT, dataset_rows, new_run, read_json, set_status, write_json
+from store import ROOT, analysis_session, dataset_rows, new_run, read_json, write_json
 from vision import analyze
 
 
@@ -36,19 +36,17 @@ def main():
                 recording.get("split", "train"),
             )
             try:
-                set_status(out, "processing")
-                report = analyze(
-                    out / meta["source"],
-                    out,
-                    config=config,
-                    max_seconds=recording.get("max_seconds", 300),
-                )
-                set_status(out, "complete")
+                with analysis_session(out):
+                    report = analyze(
+                        out / meta["source"],
+                        out,
+                        config=config,
+                        max_seconds=recording.get("max_seconds", 300),
+                    )
                 results.append(
                     dict(run=meta["id"], status="complete", events=len(report["events"]))
                 )
             except Exception as exc:
-                set_status(out, "failed", error=str(exc))
                 results.append(dict(run=meta["id"], status="failed", error=str(exc)))
         print(json.dumps(results, indent=2))
         if any(r["status"] == "failed" for r in results):
