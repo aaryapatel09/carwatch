@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.pt
+runs/
+*.mp4
+*.mov
+runtime/
+*.avi
+*.mkv
+*.mp4

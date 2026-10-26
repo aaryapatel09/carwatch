@@ -1,0 +1,28 @@
+{
+  "recordings": [
+    {
+      "file": "driver-side.mp4",
+      "session_id": "driveway-session-01",
+      "split": "train",
+      "max_seconds": 60,
+      "camera": {
+        "name": "Driver side",
+        "zone": [0.25, 0.15, 0.75, 0.98],
+        "hand_zone": [0.4, 0.35, 0.6, 0.65],
+        "pose": true
+      }
+    },
+    {
+      "file": "rear.mp4",
+      "session_id": "driveway-session-01",
+      "split": "train",
+      "max_seconds": 60,
+      "camera": {
+        "name": "Rear",
+        "zone": [0.25, 0.15, 0.75, 0.98],
+        "hand_zone": [0.4, 0.35, 0.6, 0.65],
+        "pose": true
+      }
+    }
+  ]
+}
