@@ -211,6 +211,26 @@ elif page == "Analyze video":
             "Entry counting window (seconds)", 5.0, 300.0, float(base.window), 5.0
         )
         conf = c.slider("Detection confidence", 0.1, 0.95, float(base.confidence), 0.05)
+        st.caption(
+            "Detection region: focus on your car when people look small in a wide view. "
+            "Only this blue region is analyzed. Keep the person's full body and the door visible."
+        )
+        rx = st.slider(
+            "Detection region · left / right",
+            0.0,
+            1.0,
+            (float(base.detection_region[0]), float(base.detection_region[2])),
+            0.01,
+            key=f"rx-{profile_name}",
+        )
+        ry = st.slider(
+            "Detection region · top / bottom",
+            0.0,
+            1.0,
+            (float(base.detection_region[1]), float(base.detection_region[3])),
+            0.01,
+            key=f"ry-{profile_name}",
+        )
         config = CameraConfig(
             name=name,
             zone=(hx[0], vy[0], hx[1], vy[1]),
@@ -221,6 +241,7 @@ elif page == "Analyze video":
             hand_seconds=hand_seconds,
             confidence=conf,
             pose=pose,
+            detection_region=(rx[0], ry[0], rx[1], ry[1]),
         )
         if st.button("Save camera profile"):
             try:
@@ -256,6 +277,7 @@ elif page == "Analyze video":
             if ok:
                 h, w = frame.shape[:2]
                 for rect, color in [
+                    (config.detection_region, (255, 180, 100)),
                     (config.zone, (125, 225, 165)),
                     (config.hand_zone, (80, 180, 250)),
                 ]:
@@ -270,7 +292,7 @@ elif page == "Analyze video":
                 st.image(
                     frame,
                     channels="BGR",
-                    caption="Green: ground zone · amber: handle image region",
+                    caption="Blue: analyzed region · green: ground zone · amber: handle region",
                     width=800,
                 )
             else:

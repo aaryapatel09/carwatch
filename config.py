@@ -32,11 +32,12 @@ class CameraConfig:
     hand_seconds: float = 1.5
     confidence: float = 0.35
     pose: bool = True
+    detection_region: tuple = (0.0, 0.0, 1.0, 1.0)
 
     def validate(self):
         if not isinstance(self.name, str) or not self.name.strip() or len(self.name) > 80:
             raise ValueError("Camera name must contain 1–80 characters.")
-        for box in (self.zone, self.hand_zone):
+        for box in (self.zone, self.hand_zone, self.detection_region):
             validate_zone(box)
         if type(self.repeat) is not int or type(self.pose) is not bool:
             raise ValueError("Entry count must be an integer and pose must be a boolean.")

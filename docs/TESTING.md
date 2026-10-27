@@ -6,6 +6,8 @@ Run `python -m pytest --cov --cov-report=term-missing` after installing `require
 |---|---|---|
 | Activity rules | Missing/invalid frames, entry debounce, continuous dwell, wrist visibility, timestamp and configuration validation | Real-world event accuracy |
 | Vision pipeline | Fake detector with real frame arrays; decoding/error/resource handling; evidence export | Learned detector quality |
+| Detection region | Pixel bounds, box/wrist coordinate reconstruction, preview composition, legacy full-frame defaults | Visibility of people outside the chosen region |
+| Public-video measurement | One-to-one matching, incomplete-label handling, timestamp checks, bounded/explicit download and cached-file integrity | Full-scene precision, field accuracy, or independent generalization |
 | Codecs | Real local OpenCV + ffmpeg encoding/decoding; selected-track overlay; silent output | All camera codecs or corrupted-video security |
 | Model training | Small generated fixtures, split/hash leakage checks, duplicate-analysis rejection, checksum/schema checks, checkpoint round-trip, publication failure at each commit step, old-checkpoint compatibility | Training-data quality, field generalization, or power-loss durability |
 | Local storage | Atomic JSON writes, saved-copy fingerprints, failed-copy cleanup, concurrent independent reviews, sample-data filtering, process-crash recovery, review/deletion exclusion | Multi-user access control |

@@ -6,6 +6,7 @@ from pathlib import Path
 import cv2
 
 from config import CameraConfig, finite_number
+from detection import track_frame
 from engine import ActivityEngine
 from features import RATE, make_windows, vector
 from media import extract_track_clip
@@ -79,42 +80,17 @@ def analyze(
                 continue
             next_sample = (math.floor(t * RATE + 1e-6) + 1) / RATE
             h, w = frame.shape[:2]
-            result = model.track(
-                frame,
-                persist=True,
-                classes=[0],
-                conf=config.confidence,
-                tracker="bytetrack.yaml",
-                verbose=False,
-                imgsz=640,
-            )[0]
-            people = []
+            people, annotated = track_frame(model, frame, config)
             features = []
-            if result.boxes.id is not None:
-                boxes = result.boxes.xyxy.cpu().tolist()
-                ids = result.boxes.id.cpu().tolist()
-                poses = (
-                    result.keypoints.data.cpu().tolist() if result.keypoints is not None else None
-                )
-                for idx, (tid, b) in enumerate(zip(ids, boxes)):
-                    tid = int(tid)
-                    box = [b[0] / w, b[1] / h, b[2] / w, b[3] / h]
-                    wrists = []
-                    if poses:
-                        for k in (9, 10):
-                            x, y, confidence = poses[idx][k]
-                            if confidence >= 0.5 and 0 < x < w and 0 < y < h:
-                                wrists.append((x / w, y / h))
-                    people.append((tid, box, wrists))
-                    prior = previous.get(tid)
-                    last = prior[1] if prior and 0 < t - prior[0] <= 0.6 else None
-                    dt = t - prior[0] if last else 1 / RATE
-                    values = vector(box, wrists, config.zone, config.hand_zone, last, dt)
-                    features.append(dict(track=tid, features=values))
-                    previous[tid] = (t, ((box[0] + box[2]) / 2, box[3]))
+            for tid, box, wrists in people:
+                prior = previous.get(tid)
+                last = prior[1] if prior and 0 < t - prior[0] <= 0.6 else None
+                dt = t - prior[0] if last else 1 / RATE
+                values = vector(box, wrists, config.zone, config.hand_zone, last, dt)
+                features.append(dict(track=tid, features=values))
+                previous[tid] = (t, ((box[0] + box[2]) / 2, box[3]))
             samples.append(dict(time=t, people=features))
             new = engine.update(t, people)
-            annotated = result.plot()
             for rect, color in [
                 (config.zone, (125, 225, 165)),
                 (config.hand_zone, (80, 180, 250)),

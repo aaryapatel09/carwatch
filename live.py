@@ -10,6 +10,7 @@ from pathlib import Path
 import cv2
 
 from config import CameraConfig, finite_number
+from detection import track_frame
 from engine import ActivityEngine
 from store import ROOT, read_json, write_json
 
@@ -71,30 +72,8 @@ def _camera_worker(camera, config_data, minutes, stop, messages, out):
                 continue
             next_sample = t + 0.25
             h, w = frame.shape[:2]
-            r = model.track(
-                frame,
-                persist=True,
-                classes=[0],
-                conf=config.confidence,
-                tracker="bytetrack.yaml",
-                verbose=False,
-            )[0]
-            people = []
-            if r.boxes.id is not None:
-                poses = r.keypoints.data.cpu().tolist() if r.keypoints is not None else None
-                for idx, (tid, box) in enumerate(
-                    zip(r.boxes.id.cpu().tolist(), r.boxes.xyxy.cpu().tolist())
-                ):
-                    b = [box[0] / w, box[1] / h, box[2] / w, box[3] / h]
-                    wrists = []
-                    if poses:
-                        for k in (9, 10):
-                            x, y, confidence = poses[idx][k]
-                            if confidence >= 0.5 and 0 < x < w and 0 < y < h:
-                                wrists.append((x / w, y / h))
-                    people.append((int(tid), b, wrists))
+            people, annotated = track_frame(model, frame, config)
             new = engine.update(t, people)
-            annotated = r.plot()
             for rect, color in [
                 (config.zone, (125, 225, 165)),
                 (config.hand_zone, (80, 180, 250)),

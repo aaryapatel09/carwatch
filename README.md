@@ -29,6 +29,7 @@ GitHub CI uses this CPU setup. macOS uses the normal installation above.
 ## What works
 
 - Saved per-camera calibration and thresholds, without assuming a particular car model.
+- An explicit detection region for wide views, with boxes and wrists mapped back to full-image coordinates. Only the selected region is analyzed.
 - Local video upload (up to 300 MB), 4 Hz sampled person/pose tracking, and a configurable processing cap up to 300 seconds.
 - Presence, repeated entry, and estimated-wrist-in-region cues. Wrist visibility is required; image overlap does **not** confirm physical contact.
 - Timestamped evidence images and silent H.264 event clips with pre/post context.
@@ -84,6 +85,8 @@ Each custom model's `model.json` names its weight and dataset-manifest files. Tr
 ```
 
 The integration script runs actual pose CV on a bundled still-image replay, verifies event clips, annotated review clips, persistence and dataset export, then restores its training label to unreviewed. By default it uses an isolated temporary directory. Pass `--keep-sample` to retain a clearly named sample run in your workspace. It is not a motion, car-contact, night-vision or field benchmark.
+
+An optional [public MEVA video probe](docs/PUBLIC-VIDEO.md) measures annotated-person visibility on real parking-lot footage. It exposed missed people: the full-frame setup matched 0/17 supplied samples; a region chosen during development matched 7/17. This is a documented limitation, not a safety-validation result. Run `python scripts/probe_meva.py --download`, then optionally `--focused`, to reproduce it. See the [first hardware target](docs/HARDWARE.md) for the proposed supervised camera test.
 
 Before field use, evaluate full independent recordings, including ordinary negative footage, owners, neighboring-car loading, children, carts, pets, rain, shadows, low light and occlusion. Measure false alerts per hour, event recall, alert delay, tracking continuity and blind spots. Window classification accuracy alone cannot establish these. Reusing the test split for model selection invalidates its held-out role; reserve fresh sessions for later experiments.
 
