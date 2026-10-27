@@ -25,6 +25,15 @@ FORBIDDEN_SUFFIXES = {
     ".onnx",
     ".pem",
     ".key",
+    ".p8",
+    ".p12",
+    ".jks",
+    ".keystore",
+    ".ipa",
+    ".apk",
+    ".aab",
+    ".db",
+    ".sqlite3",
 }
 # Patterns assembled to avoid matching this checker's own source literals.
 HOME_PATH = re.compile(r"/(?:Users|home)/[A-Za-z0-9_.-]+/")
@@ -49,7 +58,11 @@ def check():
             failures.append("Local environment file tracked: " + name)
         if p.as_posix() == ".streamlit/secrets.toml":
             failures.append("Local application secrets tracked: " + name)
-        if p.parts[0] in ("runtime", ".venv") or p.suffix.lower() in FORBIDDEN_SUFFIXES:
+        if (
+            any(part in ("runtime", ".venv", "node_modules", ".expo") for part in p.parts)
+            or p.name in ("google-services.json", "GoogleService-Info.plist")
+            or p.suffix.lower() in FORBIDDEN_SUFFIXES
+        ):
             failures.append("Local artifact tracked: " + name)
         path = ROOT / p
         if not path.is_file():

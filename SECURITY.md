@@ -1,13 +1,15 @@
 # Security and privacy
 
-Carwatch is a local research prototype with no remote authentication. Keep its server bound to 127.0.0.1. Do not publish it through a tunnel or expose it to a network without adding an authentication and authorization design.
+The Streamlit research dashboard has no remote authentication. Keep it bound to 127.0.0.1. The separate companion API in `server/` implements invited accounts and camera-scoped bearer credentials; it is a local pilot, not a reviewed production service. Never use the Streamlit port as the mobile API.
 
 Treat uploaded videos as untrusted media. Keep Python, OpenCV, PyTorch and ffmpeg patched. This app is not a sandbox for hostile codec payloads. Only load model checkpoints obtained from a trusted source. Custom checkpoints use PyTorch's weights-only loader plus a model-card checksum; checksums detect mismatched files, not a malicious author who controls both files.
 
-Source recordings retain their original audio. Derived clips are silent. Source videos, snapshots, features, reviews and models persist in the local data directory until deleted. No encryption or user access separation is implemented by this app.
+Source recordings retain their original audio. Derived clips are silent. Source videos, snapshots, features, reviews and models persist in the local data directory until deleted. The research dashboard implements neither application encryption nor user access separation. The companion API enforces per-account access, but its SQLite images and push tokens are readable by the host operator. Passwords and account/station bearer tokens are hashed. Native session credentials use SecureStore.
 
 Camera access requires the user's Start action. It runs in a separate process with a parent-enforced time limit and explicit Stop. A hardware failure or process kill may lose the most recent unsaved observation. No software result establishes safety.
 
 Optional ntfy notifications require environment configuration, confirmation of a private topic and explicit enablement when starting a live session. Keep tokens outside Git. The sender requires verified HTTPS and rejects redirects; it sends only fixed cue text and its UTC observation time. Journals omit the token, destination and media. Configure the service's topic permissions separately: a token or the local private-topic confirmation flag does not prove anonymous access is denied. The notification service and its mobile push providers have their own retention and access policies. See [notification setup](docs/NOTIFICATIONS.md). No real endpoint is configured by the repository.
+
+The native app adds third-party Expo/APNs/FCM delivery. Push messages contain a generic activity prompt and opaque event ID; snapshots are fetched separately from the authenticated API. Permission and push registration are explicit. Unsent jobs are cancelled on pause/disable/logout, but messages already accepted by a provider cannot be recalled. See the [API operating boundary](server/README.md#operating-boundary) and [current native dependency advisories](docs/NATIVE-VERIFICATION.md). No hosted deployment is configured.
 
 For a suspected vulnerability, use [GitHub's private vulnerability report](https://github.com/aaryapatel09/carwatch/security/advisories/new). Include the affected commit, a minimal reproduction using synthetic data, and the potential impact. Do not put private recordings, credentials, or sensitive exploit details in a public issue. There is no guaranteed response time; do not rely on this prototype for safety-critical use.

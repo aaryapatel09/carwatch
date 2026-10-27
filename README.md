@@ -1,16 +1,22 @@
 # Carwatch
 
-**A local computer vision lab for understanding activity around parked cars.**
+**A car-activity research project with a native iPhone and Android companion prototype.**
 
 [![Repository checks](https://github.com/aaryapatel09/carwatch/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/aaryapatel09/carwatch/actions/workflows/ci.yml)
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](#quick-start)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 
-Carwatch turns video into reviewable evidence: track people and estimated poses, define regions around a car, inspect activity cues, label short clips, and train an experimental sequence model. The Streamlit dashboard keeps this workflow on your computer.
+Carwatch turns video into reviewable evidence: track people and estimated poses, define regions around a car, inspect activity cues, label short clips, and train an experimental sequence model. The Streamlit dashboard keeps this research workflow on your computer. The new React Native companion adds private accounts, camera pairing, event review, and an automated push-delivery pipeline.
 
 **Research prototype.** Real-world safety performance has not been established. No custom model has been trained on real car-door activity. Activity cues describe observations; they do not establish intent, danger, or physical contact.
 
 [Quick start](#quick-start) · [How it works](#how-it-works) · [Measured results](#models-and-measured-results) · [Documentation](#documentation) · [Contributing](CONTRIBUTING.md)
+
+## Try the native companion
+
+Start with the [iPhone / Android app guide](mobile/README.md) and [private API setup](server/README.md). The offline demo runs immediately in a browser preview; native builds require Xcode/Android tooling or EAS. Phone notifications require platform credentials and an actual delivery test. No app-store release or public API is deployed.
+
+The new pipeline is **camera station → private API → activity feed + Expo push → phone event review**. Its local tests use synthetic events and mocked push responses. See [verification and remaining limits](docs/NATIVE-VERIFICATION.md).
 
 ## What you can do
 
@@ -129,7 +135,8 @@ These are 17 annotated samples from two interactions, not a general accuracy est
 
 ## Privacy and operating limits
 
-- Recordings, labels, snapshots, and models stay in `runtime/`, which Git ignores. Set `CARWATCH_DATA_DIR` to an absolute path to choose another directory.
+- The research dashboard keeps recordings, labels, snapshots, and models in `runtime/`, which Git ignores. Set `CARWATCH_DATA_DIR` to an absolute path to choose another directory.
+- The native companion station uploads event snapshots to its configured private API. Account access is enforced there; the API operator can read stored images. Generic push messages pass through Expo and the platform push provider.
 - Original recordings retain their audio; derived clips are silent. Local files are not encrypted by Carwatch.
 - Camera access requires an explicit Start action. Closing the browser tab does **not** stop an active session; use Stop or the configured time limit.
 - Optional alerts contain a fixed activity description and UTC time, with no media, camera names, location, or track IDs. A service acknowledgement does not confirm phone receipt. [Configure notifications](docs/NOTIFICATIONS.md).
@@ -143,6 +150,9 @@ The next work is intended-camera testing; permissioned, independently split reco
 
 | Guide | Contents |
 | --- | --- |
+| [Native companion](mobile/README.md) | Local app, native builds, and phone setup |
+| [Private API](server/README.md) | Accounts, camera pairing, relay, and queued push |
+| [Native verification](docs/NATIVE-VERIFICATION.md) | Tested paths, build limits, and dependency advisories |
 | [Usage and training](docs/USAGE.md) | First recording, labels, splits, batch CLI, and model artifacts |
 | [Notifications](docs/NOTIFICATIONS.md) | Private-topic configuration, delivery states, and cancellation |
 | [Testing](docs/TESTING.md) | Checks to run and what each establishes |

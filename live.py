@@ -98,6 +98,7 @@ def _camera_worker(camera, config_data, minutes, stop, messages, out, phone_aler
                 if len(state["events"]) < 100:
                     event["id"] = f"e{len(state['events']):04d}"
                     event["image"] = event["id"] + ".jpg"
+                    event["observed_at"] = time.time()
                     if not cv2.imwrite(str(out / event["image"]), annotated):
                         raise OSError("Could not save event snapshot")
                     state["events"].append(event)
