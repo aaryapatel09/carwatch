@@ -19,6 +19,7 @@ VIDEO_KEY = f"drops-123-r13/2018-03-12/10/{STEM}.r13.avi"
 VIDEO_HASH = "f76858fd66fd38500d7e7a716ee15662f557d0af54bd06489c6acd94d24ac020"
 ATTRIBUTION = "Multiview Extended Video with Activities (MEVA), Kitware Inc. and IARPA"
 LICENSE_URL = "https://mevadata.org/resources/MEVA-data-license.txt"
+DETECTORS = ("yolo11n-pose.pt", "yolo11s-pose.pt")
 
 
 def sha256(path):
@@ -140,11 +141,13 @@ def measure_samples(samples, annotations, fps):
     )
 
 
-def run_probe(allow_download=False, root=ROOT, focused=False):
+def run_probe(allow_download=False, root=ROOT, focused=False, detector=DETECTORS[0]):
     import cv2
 
     from vision import analyze
 
+    if detector not in DETECTORS:
+        raise ValueError("Choose a supported public pose detector")
     directory = Path(root) / "public-data" / "meva"
     video = fetch(VIDEO_KEY, directory, 200_000_000, allow_download, VIDEO_HASH)
     annotations = {
@@ -175,7 +178,7 @@ def run_probe(allow_download=False, root=ROOT, focused=False):
         if focused
         else (0, 0, 1, 1),
     )
-    report = analyze(video, out, config=config, max_seconds=106)
+    report = analyze(video, out, config=config, max_seconds=106, weights=detector)
     measurement = measure_samples(read_json(out / "samples.json"), truth, fps)
     result = dict(
         status="measurement_complete",
@@ -188,7 +191,8 @@ def run_probe(allow_download=False, root=ROOT, focused=False):
         ground_truth="MEVA example Person boxes during annotated door opening/closing",
         sampling_hz=4,
         analyzed_seconds=report["duration_seconds"],
-        detector="yolo11n-pose.pt",
+        detector=report["model"],
+        processing_seconds=report["processing_seconds"],
         confidence=config.confidence,
         image_size=640,
         detection_region=config.detection_region,

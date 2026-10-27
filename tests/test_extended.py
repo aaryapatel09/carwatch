@@ -85,8 +85,17 @@ def test_model_roundtrip_and_demo_isolation(tmp_path):
     assert card["origin"] == "synthetic_demo"
     with pytest.raises(ValueError, match="cannot score real"):
         Predictor(tmp_path)
-    pred = Predictor(tmp_path, allow_demo=True).predict(rows[0]["sequence"])
+    predictor = Predictor(tmp_path, allow_demo=True)
+    pred = predictor.predict(rows[0]["sequence"])
     assert abs(sum(pred["scores"].values()) - 1) < 1e-5
+    assert pred["observed_frames"] == sum(v[0] for v in rows[0]["sequence"])
+    visible = next(v for v in rows[0]["sequence"] if v[0])
+    for observed in (0, 1, 3):
+        sparse = [visible] * observed + [[0.0] * len(NAMES)] * (32 - observed)
+        with pytest.raises(ValueError, match="at least four observed"):
+            predictor.predict(sparse)
+    sparse = [visible] * 4 + [[0.0] * len(NAMES)] * 28
+    assert predictor.predict(sparse)["observed_frames"] == 4
 
 
 def test_saved_review_to_dataset_and_delete(tmp_path):

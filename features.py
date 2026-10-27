@@ -9,6 +9,7 @@ from engine import inside
 SCHEMA = "carwatch-sequence-v1"
 RATE = 4
 STEPS = 32
+MIN_OBSERVED_FRAMES = 4
 SECONDS = STEPS / RATE
 NAMES = [
     "visible",
@@ -55,7 +56,7 @@ def make_windows(samples):
             arr[slot] = person["features"]
     result = []
     for (track, block), arr in sorted(buckets.items()):
-        if arr[:, 0].sum() < 4:
+        if arr[:, 0].sum() < MIN_OBSERVED_FRAMES:
             continue
         result.append(
             dict(

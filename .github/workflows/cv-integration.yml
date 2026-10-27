@@ -40,3 +40,4 @@ jobs:
         run: |
           python scripts/probe_meva.py --download
           python scripts/probe_meva.py --focused
+          python scripts/probe_meva.py --focused --detector yolo11s-pose.pt

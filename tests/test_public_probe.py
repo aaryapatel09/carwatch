@@ -4,7 +4,13 @@ import io
 import pytest
 import yaml
 
-from public_probe import fetch, match_boxes, measure_samples, person_annotations
+from public_probe import fetch, match_boxes, measure_samples, person_annotations, run_probe
+
+
+def test_unsupported_probe_model_rejected_before_download(tmp_path, monkeypatch):
+    monkeypatch.setattr("public_probe.fetch", lambda *a, **k: pytest.fail("must not download"))
+    with pytest.raises(ValueError, match="supported public pose detector"):
+        run_probe(True, tmp_path, detector="arbitrary.pt")
 
 
 def test_one_detection_cannot_satisfy_two_actors():

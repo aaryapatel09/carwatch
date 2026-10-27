@@ -14,7 +14,7 @@ from filelock import FileLock
 from torch import nn
 
 from config import finite_number
-from features import LABELS, NAMES, SCHEMA, validate_sequence
+from features import LABELS, MIN_OBSERVED_FRAMES, NAMES, SCHEMA, validate_sequence
 from store import write_json
 
 
@@ -40,7 +40,7 @@ def validate_dataset(rows, allow_synthetic=False):
         if row.get("schema") != SCHEMA:
             raise ValueError("Feature schema mismatch")
         sequence = validate_sequence(row["sequence"])
-        if sequence[:, 0].sum() < 4:
+        if sequence[:, 0].sum() < MIN_OBSERVED_FRAMES:
             raise ValueError("Each window needs at least four observed frames")
         if row.get("label") not in LABELS:
             raise ValueError("Unsupported activity label")
@@ -268,7 +268,11 @@ class Predictor:
         self.model.eval()
 
     def predict(self, sequence):
-        x = torch.tensor(validate_sequence(sequence)).unsqueeze(0)
+        sequence = validate_sequence(sequence)
+        observed = int(sequence[:, 0].sum())
+        if observed < MIN_OBSERVED_FRAMES:
+            raise ValueError("Prediction requires at least four observed frames")
+        x = torch.tensor(sequence).unsqueeze(0)
         x = ((x - self.mean) / self.std) * x[:, :, :1]
         with torch.no_grad():
             probs = self.model(x).softmax(1)[0].tolist()
@@ -277,5 +281,6 @@ class Predictor:
             label=LABELS[i],
             score=round(probs[i], 4),
             scores=dict(zip(LABELS, probs)),
+            observed_frames=observed,
             note="Uncalibrated model score; not probability of danger",
         )

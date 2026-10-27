@@ -6,10 +6,13 @@ Carwatch analyzed the first 106 seconds at 4 Hz with YOLO11n-pose, image size 64
 
 | Configuration | Matched / annotated person samples |
 |---|---:|
-| Full image | 0 / 17 |
-| Focused detection region | 7 / 17 |
+| YOLO11n-pose, full image | 0 / 17 |
+| YOLO11n-pose, focused detection region | 7 / 17 |
+| YOLO11s-pose, same focused region | 9 / 17 |
 
 The focused region is `(190, 180, 540, 490)` in source pixels. It was selected after inspecting the full-image failure, so these are **development results**, not independent validation. Detection coordinates and estimated wrists are mapped back to the original image. The focused result still misses people. It does not justify unattended safety use, even on similar-looking scenes.
+
+The small-model comparison kept the same region, threshold, image size and sample times. In separate local runs, processing the 106-second excerpt took 26.24 seconds with the nano model and 54.84 seconds with the small model. These are observations on this computer, not controlled hardware benchmarks. The modest improvement on this selected development clip does not establish general accuracy or justify changing the app's nano-model default. Reports include the actual detector and elapsed processing time; the probe can reproduce either model.
 
 There is no measurement here of activity-class accuracy, actual handle contact, malicious intent, false alerts per hour, or accuracy of the estimated wrist locations. No weights were trained on this footage, and its annotations were not converted into the app's four human activity labels. The camera viewpoint also differs from a camera mounted on a car.
 
@@ -18,11 +21,12 @@ There is no measurement here of activity-class accuracy, actual handle contact, 
 ```sh
 python scripts/probe_meva.py --download
 python scripts/probe_meva.py --focused
+python scripts/probe_meva.py --focused --detector yolo11s-pose.pt
 ```
 
 The first command explicitly permits a bounded 182 MB download from the dataset's public S3 bucket. Source, annotations, derived clips and measurement JSON stay under `runtime/public-data/meva/`, excluded from Git. Each run creates its own `probe-*` folder; `latest-measurement.json` points to the latest measurement. The downloaded video is unchanged; evidence clips are silent, scaled and annotated by Carwatch. These public test artifacts can be removed from that directory when no longer needed. They are not added to the training dataset or the app's recording history.
 
-The manually dispatched CV integration workflow has an optional `public_probe` input to run both configurations on Linux. It is off by default. A completed measurement step confirms that the probe ran; it does not mean the detector met a performance target.
+The manually dispatched CV integration workflow has an optional `public_probe` input to run all three configurations on Linux. It is off by default. A completed measurement step confirms that the probe ran; it does not mean the detector met a performance target. The small pretrained model is downloaded on its first use; model weights remain excluded from Git.
 
 Video SHA-256: `f76858fd66fd38500d7e7a716ee15662f557d0af54bd06489c6acd94d24ac020`. Each report records annotation hashes, settings and scope. Do not repeatedly tune on this clip and then describe it as held-out data. Use different recording sessions and intended camera hardware for subsequent evaluation.
 

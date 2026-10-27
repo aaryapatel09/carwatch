@@ -28,6 +28,7 @@ for page in ['Analyze video','Live camera','Review & label','Train models','Sett
     if page=='Train models':
         assert next(b for b in app.button if b.label=='Train custom model').disabled
 app.sidebar.radio[0].set_value('Review & label').run(timeout=30)
+assert any('Missing detections are not evidence' in c.value for c in app.caption)
 next(s for s in app.selectbox if s.label=='Human label').set_value('ordinary_activity')
 next(b for b in app.button if b.label=='Save window label').click().run(timeout=30)
 assert not app.exception

@@ -59,6 +59,8 @@ Running `python demo.py` creates `runtime/models/synthetic-demo/`, a custom GRU 
 
 The person/pose detector is pretrained YOLO11n, not custom-trained by this project. **No custom model has yet been trained on real car-door activity.** Real training requires footage and reviewed labels. The minimum of two examples per class per split is an execution sanity check, not sufficient data for reliable deployment.
 
+Each training or prediction window must contain at least four observed frames; empty or shorter sequences are rejected instead of assigned an activity. This minimum does not establish reliability. Review charts show track visibility separately from zone membership because missing detections are not evidence of ordinary activity.
+
 Classes: ordinary_activity, lingering, repeated_approach, hand_near_zone. They describe visible activity, not criminal intent, gender, identity, weapons, or threat level. Use Exclude for tracking failures, occlusion, ambiguous mixtures, or clips that cannot be confidently labeled. Human definitions of ordinary activity and lingering can overlap; create a consistent annotation protocol before collecting a large dataset.
 
 ## Training and batch CLI
@@ -87,6 +89,8 @@ Each custom model's `model.json` names its weight and dataset-manifest files. Tr
 The integration script runs actual pose CV on a bundled still-image replay, verifies event clips, annotated review clips, persistence and dataset export, then restores its training label to unreviewed. By default it uses an isolated temporary directory. Pass `--keep-sample` to retain a clearly named sample run in your workspace. It is not a motion, car-contact, night-vision or field benchmark.
 
 An optional [public MEVA video probe](docs/PUBLIC-VIDEO.md) measures annotated-person visibility on real parking-lot footage. It exposed missed people: the full-frame setup matched 0/17 supplied samples; a region chosen during development matched 7/17. This is a documented limitation, not a safety-validation result. Run `python scripts/probe_meva.py --download`, then optionally `--focused`, to reproduce it. See the [first hardware target](docs/HARDWARE.md) for the proposed supervised camera test.
+
+The probe also supports `--focused --detector yolo11s-pose.pt`. That larger model matched 9/17 on the same development clip and took longer locally; the app's default remains YOLO11n. No model was trained on this comparison, and it is not held-out evaluation.
 
 Before field use, evaluate full independent recordings, including ordinary negative footage, owners, neighboring-car loading, children, carts, pets, rain, shadows, low light and occlusion. Measure false alerts per hour, event recall, alert delay, tracking continuity and blind spots. Window classification accuracy alone cannot establish these. Reusing the test split for model selection invalidates its held-out role; reserve fresh sessions for later experiments.
 

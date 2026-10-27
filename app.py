@@ -448,7 +448,7 @@ elif page == "Review & label":
                         )
         with t2:
             st.write(
-                "Label the activity of the selected track over this entire 8-second window. Choose Exclude if the track is wrong, obscured, or the window contains ambiguous mixed activity."
+                "Label the selected track over the displayed interval (up to 8 seconds). Choose Exclude if the track is wrong, obscured, or the interval contains ambiguous mixed activity."
             )
             if windows:
                 lookup = {w["id"]: w for w in windows}
@@ -483,7 +483,14 @@ elif page == "Review & label":
                         "The review clip marks the selected track in green. Missing overlays mean the track was not observed at that time."
                     )
                     chart = pd.DataFrame(item["sequence"], columns=NAMES)
-                    st.line_chart(chart[["in_zone", "wrist_visible", "wrist_in_zone"]], height=180)
+                    st.line_chart(
+                        chart[["visible", "in_zone", "wrist_visible", "wrist_in_zone"]], height=180
+                    )
+                    st.caption(
+                        "The visibility line separates missing detections from a detected person "
+                        "outside the zone. Missing detections are not evidence of ordinary activity. "
+                        "Short clips are padded after their final frame."
+                    )
                 with b:
                     st.write(f"Track {item['track']} · window {wid}")
                     if item.get("prediction"):
