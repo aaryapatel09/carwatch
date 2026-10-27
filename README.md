@@ -1,117 +1,162 @@
-# Carwatch — local activity lab
+# Carwatch
 
-A working research prototype for reviewing activity around parked cars. It processes recorded video locally and supports a complete recording → pose tracking → activity cues → evidence clips → manual labels → custom sequence-model training → held-out evaluation workflow.
+**A local computer vision lab for understanding activity around parked cars.**
 
-## Start
+[![Repository checks](https://github.com/aaryapatel09/carwatch/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/aaryapatel09/carwatch/actions/workflows/ci.yml)
+[![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](#quick-start)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
+
+Carwatch turns video into reviewable evidence: track people and estimated poses, define regions around a car, inspect activity cues, label short clips, and train an experimental sequence model. The Streamlit dashboard keeps this workflow on your computer.
+
+**Research prototype.** Real-world safety performance has not been established. No custom model has been trained on real car-door activity. Activity cues describe observations; they do not establish intent, danger, or physical contact.
+
+[Quick start](#quick-start) · [How it works](#how-it-works) · [Measured results](#models-and-measured-results) · [Documentation](#documentation) · [Contributing](CONTRIBUTING.md)
+
+## What you can do
+
+| Capability | Available today |
+| --- | --- |
+| Analyze recordings | Upload video and run local person/pose tracking at 4 samples per second. |
+| Calibrate each view | Save ground and handle regions, a focused detection region, and activity thresholds. |
+| Review evidence | Inspect timestamped images, silent event clips, track overlays, and detection gaps. |
+| Build a dataset | Label 8-second windows and group recordings into train, validation, and test splits. |
+| Train a custom model | Fit a small PyTorch GRU, inspect its model card, and evaluate a separate test split. |
+| Try a live camera | Explicitly start and stop a local USB/webcam session with a 1–10 minute limit. Physical hardware is untested. |
+| Send optional text alerts | Configure a private ntfy topic and opt in per live session. Transport is tested locally; phone receipt is unverified. |
+| Manage local data | Export JSON/ZIP, batch-process recordings, and delete recordings or models. |
+
+<details>
+<summary>Interface preview: camera and notifications off</summary>
+
+The live-camera setup screen below is from the running application. No camera is active and no notification service is configured.
+
+<img src="docs/assets/live-camera.jpg" alt="Carwatch live camera setup with a two-minute limit, unchecked recording and alert controls, and a disabled Start camera button." width="620">
+
+</details>
+
+## Quick start
+
+Use **Python 3.11**, Git, and **ffmpeg**. This is a source checkout, not an installer or hosted service.
+
+### 1. Install the media runtime
+
+Run the command for your operating system:
 
 ```sh
+# macOS, with Homebrew
+brew install ffmpeg
+
+# Ubuntu / Debian
+sudo apt-get update
+sudo apt-get install --no-install-recommends ffmpeg libgl1
+```
+
+### 2. Get the source
+
+```sh
+git clone https://github.com/aaryapatel09/carwatch.git
 cd carwatch
 python3.11 -m venv .venv
 source .venv/bin/activate
-python -m pip install -r requirements.lock.txt
-streamlit run app.py --server.port 8517
 ```
 
-Open http://127.0.0.1:8517. Supported test runtime: Python 3.11. Install ffmpeg first (`brew install ffmpeg` on macOS, or `sudo apt-get install ffmpeg libgl1` on Ubuntu). First inference downloads public YOLO11 weights; no videos are uploaded. The server binds only to localhost. Run from a source checkout; this repository is not a packaged desktop application.
+### 3. Install dependencies
 
-The default data directory is `runtime/` in the checkout. Set `CARWATCH_DATA_DIR` to an absolute path before starting the app to use another directory. Test commands should use an isolated temporary directory. The checked-in lock is the tested dependency snapshot; GPU/Linux resolution can add platform-specific transitive dependencies. See [contributing](CONTRIBUTING.md) for development tools and [security](SECURITY.md) before running.
+On **macOS**:
 
-For a Linux CPU-only installation, avoid the larger default CUDA dependencies by installing the pinned CPU builds first:
+```sh
+python -m pip install -r requirements.lock.txt
+```
+
+On **Linux with CPU inference** (also used by CI):
 
 ```sh
 python -m pip install --no-deps --index-url https://download.pytorch.org/whl/cpu -r requirements-cpu.txt
 python -m pip install -r requirements.lock.txt -c requirements-cpu.txt
+```
+
+### 4. Open the dashboard
+
+```sh
 python -m pip check
+streamlit run app.py --server.port 8517
 ```
 
-GitHub CI uses this CPU setup. macOS uses the normal installation above.
+Open **[localhost:8517](http://127.0.0.1:8517)**. The checked-in configuration binds to `127.0.0.1`. First inference downloads pretrained model weights; source video stays local. Keep this unauthenticated research app on localhost.
 
-## What works
-
-- Saved per-camera calibration and thresholds, without assuming a particular car model.
-- An explicit detection region for wide views, with boxes and wrists mapped back to full-image coordinates. Only the selected region is analyzed.
-- Local video upload (up to 300 MB), 4 Hz sampled person/pose tracking, and a configurable processing cap up to 300 seconds.
-- Presence, repeated entry, and estimated-wrist-in-region cues. Wrist visibility is required; image overlap does **not** confirm physical contact.
-- Timestamped evidence images and silent H.264 event clips with pre/post context.
-- Persistent recording history, human event review, annotated per-track training clips, and activity labels.
-- Nonoverlapping 8-second training windows with explicit missing-detection masks.
-- A custom PyTorch GRU with train-only feature normalization, validation-selected checkpoints, and separately reported test confusion matrices.
-- Dataset split checks by recording group and exact video hash; duplicate-window and synthetic-data checks.
-- Optional real experimental model scoring on new video windows. Scores do not automatically trigger alerts.
-- Opt-in local USB/webcam monitor with explicit Start/Stop, a 1–10 minute session limit, local event snapshots, and delayed-frame status. Hardware capture has not been exercised on this machine.
-- Optional text-only ntfy alerts during explicitly enabled live sessions, with bounded retries, cue cooldowns, expiry and cancellation on Stop. Tested with a local HTTPS receiver; physical-phone receipt remains unverified. See [notification setup](docs/NOTIFICATIONS.md).
-- Local JSON/ZIP export, model cards, dataset fingerprints, camera settings, recording deletion, and model deletion.
-- Batch processing of multiple camera recordings under one session group. Views are processed independently, without cross-camera identity matching or synchronization.
-
-## Try the app
-
-1. **Overview:** see saved recordings and review progress.
-2. **Analyze video:** choose or save a camera profile; mark ground and handle image regions. Upload permissioned footage. Use one recording group for all cameras and clips from a filming session. Assign train/val/test before analysis. Green is the ground zone; amber is the handle region.
-3. **Review & label:** inspect event clips and save event feedback. In Training windows, prepare an annotated clip, check the selected track, and choose a human activity label. Event feedback and training labels are separate.
-4. **Train models:** review label counts and dataset checks. Train on actual reviewed recordings when ready. Real models appear in the model registry and the analysis selector.
-5. **Live camera:** explicitly start a local camera only when ready. It saves event snapshots and logs, not full video or audio. Optional text alerts require a configured private topic and a separate checkbox. Stop manually or use the session time limit. Closing the tab does not stop an active session.
-6. **Settings:** manage local data. Active analyses and reviews are protected from deletion. Interrupted analyses are identified by their released process lock and can be deleted. Deleting a recording does not untrain an existing model; delete/retrain affected models separately.
-
-The optional integration example recording is a replay of a bundled Ultralytics example photo, explicitly marked `sample`. It verifies the CV pipeline but is **not** car-security validation and is excluded from real-data training.
-
-## What was actually trained
-
-Running `python demo.py` creates `runtime/models/synthetic-demo/`, a custom GRU trained for 50 epochs on 192 generated feature sequences (4 classes × 16 examples × 3 splits). It learns generated movement patterns. Its reported scores are only on held-out generated patterns, not on real footage. The app refuses to apply this model to real recordings.
-
-The person/pose detector is pretrained YOLO11n, not custom-trained by this project. **No custom model has yet been trained on real car-door activity.** Real training requires footage and reviewed labels. The minimum of two examples per class per split is an execution sanity check, not sufficient data for reliable deployment.
-
-Each training or prediction window must contain at least four observed frames; empty or shorter sequences are rejected instead of assigned an activity. This minimum does not establish reliability. Review charts show track visibility separately from zone membership because missing detections are not evidence of ordinary activity.
-
-Classes: ordinary_activity, lingering, repeated_approach, hand_near_zone. They describe visible activity, not criminal intent, gender, identity, weapons, or threat level. Use Exclude for tracking failures, occlusion, ambiguous mixtures, or clips that cannot be confidently labeled. Human definitions of ordinary activity and lingering can overlap; create a consistent annotation protocol before collecting a large dataset.
-
-## Training and batch CLI
+No camera is needed to explore the dashboard or exercise synthetic training:
 
 ```sh
-.venv/bin/python demo.py
-.venv/bin/python cli.py export reviewed-windows.json
-.venv/bin/python cli.py train --epochs 60 --name experiment-01
-.venv/bin/python cli.py batch data/batch.example.json
+python demo.py
 ```
 
-The batch manifest is an example: replace file paths and calibration with actual recordings. Keep all views of the same session in the same split. Keep actors, cars and locations separate across splits where practical. Exact hashes cannot detect differently cropped/reencoded versions of the same recording; correct session grouping remains necessary.
+This trains on generated feature sequences only. See [the usage guide](docs/USAGE.md) for real-video analysis, labeling, batch commands, and model storage.
 
-The older `train_behavior.py` CSV logistic-regression baseline remains available for comparison, but is not used by the dashboard. Its model is not loaded by the new pipeline.
+## How it works
 
-Each custom model's `model.json` names its weight and dataset-manifest files. Training writes a new generation, then atomically replaces that card only after both files are ready. An interrupted replacement leaves the prior model usable. Older generations remain in that model folder until the model is deleted in Settings; include the whole folder when backing up a model. Earlier checkpoints using `weights.pt` remain readable.
-
-## Validation
-
-```sh
-.venv/bin/python -m pytest -q
-.venv/bin/python smoke_video.py
-.venv/bin/python scripts/verify_flow.py
+```mermaid
+flowchart LR
+    V[Local video] --> P[Person and pose tracking]
+    P --> R[Region and duration rules]
+    R --> E[Evidence clips]
+    P --> W[8-second track windows]
+    E --> H[Human review]
+    W --> H
+    H --> D[Grouped dataset splits]
+    D --> T[Custom GRU training]
+    T --> M[Model card and test results]
 ```
 
-The integration script runs actual pose CV on a bundled still-image replay, verifies event clips, annotated review clips, persistence and dataset export, then restores its training label to unreviewed. By default it uses an isolated temporary directory. Pass `--keep-sample` to retain a clearly named sample run in your workspace. It is not a motion, car-contact, night-vision or field benchmark.
+The vision pipeline uses pretrained **YOLO11** and **ByteTrack**. Activity rules track sustained presence, repeated entries, and estimated wrists remaining in an image region. Custom models use 32-frame sequences with explicit missing-detection masks. Model scores do not automatically trigger alerts.
 
-An optional [public MEVA video probe](docs/PUBLIC-VIDEO.md) measures annotated-person visibility on real parking-lot footage. It exposed missed people: the full-frame setup matched 0/17 supplied samples; a region chosen during development matched 7/17. This is a documented limitation, not a safety-validation result. Run `python scripts/probe_meva.py --download`, then optionally `--focused`, to reproduce it. See the [first hardware target](docs/HARDWARE.md) for the proposed supervised camera test.
+Live monitoring is a separate opt-in path: camera → pose tracking → activity rules → local snapshots and optional text delivery. Multiple recorded views can share a dataset group, but are processed independently; there is no synchronized live multi-camera system or cross-camera identity matching.
 
-The probe also supports `--focused --detector yolo11s-pose.pt`. That larger model matched 9/17 on the same development clip and took longer locally; the app's default remains YOLO11n. No model was trained on this comparison, and it is not held-out evaluation.
+## Models and measured results
 
-Before field use, evaluate full independent recordings, including ordinary negative footage, owners, neighboring-car loading, children, carts, pets, rain, shadows, low light and occlusion. Measure false alerts per hour, event recall, alert delay, tracking continuity and blind spots. Window classification accuracy alone cannot establish these. Reusing the test split for model selection invalidates its held-out role; reserve fresh sessions for later experiments.
+**What was trained:** a 32-unit GRU for 50 epochs on 192 generated sequences. This exercises training, checkpoint selection, and evaluation. The application prevents that synthetic model from scoring real recordings. Pretrained YOLO weights were not trained by this project.
 
-## Data and privacy
+**What real footage showed:** a public MEVA parking-lot development probe measured whether the detector matched supplied person boxes at IoU ≥ 0.5:
 
-Local recording data is under `runtime/`, ignored by Git: uploaded source video, event/track clips, features, human labels, models, and manifests. Source audio is not included in derived clips but remains in the saved original. No face recognition, reidentification across cameras, external video upload, or weapon actuation is connected. Model downloads are inbound only. Optional notifications send a fixed cue description and UTC time to a user-configured service; they exclude media, camera names, location and track IDs. Credentials come from the environment and are not written to notification journals. Camera workers run in a separate process with a parent-enforced time limit so Stop can terminate a blocked driver or sender. Local files are not encrypted by this app; use device storage protection as appropriate. Recording data is retained until deletion in Settings; live-session journals and snapshots remain under `runtime/live/` until manually removed.
+| Configuration | Matched annotated samples |
+| --- | ---: |
+| YOLO11n-pose, full image | 0 / 17 |
+| YOLO11n-pose, focused region | 7 / 17 |
+| YOLO11s-pose, same focused region | 9 / 17 |
 
-## Remaining product work
+These are 17 annotated samples from two interactions, not a general accuracy estimate. The region was selected after observing the initial failure. Unannotated frames were not treated as negatives, and no activity or false-alert benchmark was measured. See [data attribution, methodology, and reproduction commands](docs/PUBLIC-VIDEO.md).
 
-This is a local research app with recorded-video analysis and an untested-on-hardware local camera monitor. Universal mounting, automotive power/temperature qualification, robust multi-camera live ingestion, authenticated remote access, LTE/offline behavior, verified physical-phone delivery, production retention/access controls, real behavior training, and field evaluation are not complete. The optional sender's service acknowledgement does not confirm phone receipt. No absence of alerts should be displayed as a guarantee of safety.
+**Software verification:** implementation commit [`08ac9e4`](https://github.com/aaryapatel09/carwatch/commit/08ac9e4d38569f728d5c4286d27f5023246769de) passed [112 tests and repository checks](https://github.com/aaryapatel09/carwatch/actions/runs/40427307711), plus [actual CV, clip export, and local HTTPS alert integration](https://github.com/aaryapatel09/carwatch/actions/runs/40427307257). Selected-module coverage was 87%. The badge above tracks current branch checks; software tests do not establish field reliability.
 
-## License
+## Privacy and operating limits
 
-Project code is licensed under [AGPL-3.0-only](LICENSE). Pretrained model weights and third-party libraries retain their own terms. No model weights or recordings are included in the repository.
+- Recordings, labels, snapshots, and models stay in `runtime/`, which Git ignores. Set `CARWATCH_DATA_DIR` to an absolute path to choose another directory.
+- Original recordings retain their audio; derived clips are silent. Local files are not encrypted by Carwatch.
+- Camera access requires an explicit Start action. Closing the browser tab does **not** stop an active session; use Stop or the configured time limit.
+- Optional alerts contain a fixed activity description and UTC time, with no media, camera names, location, or track IDs. A service acknowledgement does not confirm phone receipt. [Configure notifications](docs/NOTIFICATIONS.md).
+- There is no face recognition, identity inference, weapon actuation, or automated emergency dispatch. An absence of alerts is not evidence that a scene is safe.
 
-## Sources and licensing
+## Next milestones
 
-- Ultralytics pose API and keypoint mapping: https://docs.ultralytics.com/tasks/pose/
-- Tracking API: https://docs.ultralytics.com/modes/track/
-- PyTorch GRU: https://docs.pytorch.org/docs/stable/generated/torch.nn.GRU.html
-- Ultralytics code and pretrained models have AGPL-3.0 / enterprise licensing conditions: https://www.ultralytics.com/license
+The next work is intended-camera testing; permissioned, independently split recordings; real activity-model training; and measurements of event recall, false alerts per hour, delay, low light, and blind spots. Universal mounting, automotive power/heat/weather qualification, connectivity, and physical-phone delivery remain unverified. See the [readiness audit](docs/READINESS.md) and [proposed hardware test](docs/HARDWARE.md).
 
-The bundled sample photo comes from the installed Ultralytics package and is used solely for a local integration check. Review code, model, example-media and training-data licenses before distributing a product. No proprietary-commercial readiness is asserted.
+## Documentation
+
+| Guide | Contents |
+| --- | --- |
+| [Usage and training](docs/USAGE.md) | First recording, labels, splits, batch CLI, and model artifacts |
+| [Notifications](docs/NOTIFICATIONS.md) | Private-topic configuration, delivery states, and cancellation |
+| [Testing](docs/TESTING.md) | Checks to run and what each establishes |
+| [Verification record](VERIFICATION.md) | Dated evidence and regression fixes |
+| [Public-video probe](docs/PUBLIC-VIDEO.md) | Reproducible MEVA measurement and attribution |
+| [Readiness](docs/READINESS.md) | Implemented capabilities and missing field evidence |
+| [Security](SECURITY.md) | Local access, data handling, and vulnerability reporting |
+
+## Contributing
+
+Bug fixes, reproducible tests, documentation improvements, and carefully scoped experiments are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md). Use synthetic examples in issues and pull requests; keep recordings, credentials, and model weights out of Git.
+
+## License and acknowledgements
+
+Project code is licensed under **[AGPL-3.0-only](LICENSE)**. Libraries, pretrained weights, and datasets retain their own terms. No model weights or recordings are included in this repository.
+
+Built with [Streamlit](https://github.com/streamlit/streamlit), [Ultralytics YOLO](https://github.com/ultralytics/ultralytics), [PyTorch](https://github.com/pytorch/pytorch), [OpenCV](https://github.com/opencv/opencv), and [FFmpeg](https://ffmpeg.org/). Ultralytics has [AGPL / enterprise licensing conditions](https://www.ultralytics.com/license). The optional integration replay uses a photo from the installed Ultralytics package. The optional public probe uses [MEVA](https://mevadata.org/) by Kitware Inc. and IARPA under [CC BY 4.0](https://mevadata.org/resources/MEVA-data-license.txt).

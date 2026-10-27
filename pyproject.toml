@@ -6,6 +6,11 @@ readme = "README.md"
 requires-python = ">=3.11,<3.13"
 license = "AGPL-3.0-only"
 
+[project.urls]
+Repository = "https://github.com/aaryapatel09/carwatch"
+Documentation = "https://github.com/aaryapatel09/carwatch#readme"
+Issues = "https://github.com/aaryapatel09/carwatch/issues"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]

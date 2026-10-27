@@ -1,6 +1,31 @@
 # Contributing
 
-Use Python 3.11 and install `requirements-dev.txt` into an isolated virtual environment. Install ffmpeg separately. Run `ruff check .`, `ruff format --check .`, `python -m pytest`, and `python scripts/check_repository.py` before opening a pull request.
+## Development setup
+
+Use Python 3.11 and follow the [platform-specific setup](README.md#quick-start), including ffmpeg. Install development tools into the same isolated environment:
+
+```sh
+# macOS
+python -m pip install -r requirements-dev.txt
+
+# Linux CPU environment, after installing the CPU builds from the quick start
+python -m pip install -r requirements-dev.txt -c requirements-cpu.txt
+```
+
+Before opening a pull request, run:
+
+```sh
+ruff check .
+ruff format --check .
+python -m pytest
+python scripts/check_repository.py
+```
+
+## Proposing a change
+
+For a bug, include the platform, Python version, reproduction steps, and expected versus observed behavior. For an experiment, explain the observation you want to measure and how you will evaluate it independently. The issue templates help capture both.
+
+Fork the repository, make a focused branch, and open a pull request against `master`. Explain what changed and which checks you ran. See [the test map](docs/TESTING.md) for optional integration checks; these may download public weights or data. Contributions are made under the project's [AGPL-3.0-only license](LICENSE).
 
 Keep changes focused and add regression tests for behavior changes. Tests must not activate a real camera, send notifications, or require private videos. Use isolated temporary data directories. Mark any model/download integration tests explicitly.
 

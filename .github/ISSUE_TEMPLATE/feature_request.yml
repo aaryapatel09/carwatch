@@ -1,0 +1,25 @@
+name: Feature or experiment
+description: Propose a capability, improvement, or measurable research experiment.
+title: "[Proposal] "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or research question
+      description: Describe the user need or visible activity you want to study.
+    validations:
+      required: true
+  - type: textarea
+    id: approach
+    attributes:
+      label: Proposed approach
+      description: Include constraints, alternatives, and data or hardware requirements. Do not share private recordings.
+    validations:
+      required: true
+  - type: textarea
+    id: evaluation
+    attributes:
+      label: How would we evaluate it?
+      description: Separate software checks from independent real-world performance evidence.
+    validations:
+      required: true

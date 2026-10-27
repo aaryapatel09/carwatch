@@ -1,0 +1,34 @@
+name: Bug report
+description: Report a reproducible software problem.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: "Please use synthetic examples. Do not attach private recordings, faces, license plates, precise locations, credentials, or model artifacts. Use SECURITY.md for vulnerabilities."
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python version, Carwatch commit, and relevant dependency or device details.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Include a minimal example without private data.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Observed behavior
+      description: Include relevant errors with tokens and private paths removed.
+    validations:
+      required: true
