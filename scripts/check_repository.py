@@ -14,11 +14,26 @@ REQUIRED = [
     "requirements.lock.txt",
     ".github/workflows/ci.yml",
 ]
-FORBIDDEN_SUFFIXES = {".pt", ".pth", ".joblib", ".mp4", ".mov", ".avi", ".mkv", ".onnx"}
+FORBIDDEN_SUFFIXES = {
+    ".pt",
+    ".pth",
+    ".joblib",
+    ".mp4",
+    ".mov",
+    ".avi",
+    ".mkv",
+    ".onnx",
+    ".pem",
+    ".key",
+}
 # Patterns assembled to avoid matching this checker's own source literals.
 HOME_PATH = re.compile(r"/(?:Users|home)/[A-Za-z0-9_.-]+/")
 TOKEN = re.compile(
-    r"(?:gh" + r"p_[A-Za-z0-9]{30,}|sk-" + r"[A-Za-z0-9_-]{35,}|AKIA" + r"[A-Z0-9]{16})"
+    r"(?:gh"
+    + r"p_[A-Za-z0-9]{30,}|sk-"
+    + r"[A-Za-z0-9_-]{35,}|AKIA"
+    + r"[A-Z0-9]{16}|tk_"
+    + r"[A-Za-z0-9]{25,})"
 )
 
 
@@ -30,6 +45,10 @@ def check():
     paths = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).decode().split("\0")
     for name in filter(None, paths):
         p = Path(name)
+        if (p.name == ".env" or p.name.startswith(".env.")) and p.name != ".env.example":
+            failures.append("Local environment file tracked: " + name)
+        if p.as_posix() == ".streamlit/secrets.toml":
+            failures.append("Local application secrets tracked: " + name)
         if p.parts[0] in ("runtime", ".venv") or p.suffix.lower() in FORBIDDEN_SUFFIXES:
             failures.append("Local artifact tracked: " + name)
         path = ROOT / p

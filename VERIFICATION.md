@@ -4,8 +4,8 @@ Story: load a recording, calibrate its view, run pose tracking, review saved evi
 
 ## Current evidence
 
-- **87 tests passed** locally after adding the public-video probe, bounded-download regressions, detection-region mapping and prediction evidence checks. `pip check` found no broken requirements in the installed environment.
-- Selected-module statement/branch coverage is **87%**. This includes rule logic, feature extraction, storage, training, media, vision, live control and the public-video probe; it is not whole-product accuracy or safety coverage.
+- **112 tests passed** locally after adding opt-in notification delivery and its failure-path checks. `pip check` found no broken requirements in the installed environment.
+- Selected-module statement/branch coverage is **87%**. This includes rule logic, feature extraction, storage, training, media, vision, live control, notification delivery and the public-video probe; it is not whole-product accuracy or safety coverage.
 - All six interface sections render in an isolated Streamlit AppTest process. Label saves persist; sample footage is excluded from real training; Start camera is disabled without explicit consent.
 - Lint, formatting and `git diff --check` pass. Workflow definitions pass official **actionlint v1.7.12** after fixing a disallowed expression context.
 - `pip-audit` queried **68 pinned runtime packages** and reported **zero known vulnerabilities** at check time. This is not a guarantee of absence of vulnerabilities; development/system tools are outside that audit.
@@ -15,6 +15,8 @@ Story: load a recording, calibrate its view, run pose tracking, review saved evi
 - A custom 32-unit GRU trained for 50 epochs on 192 generated sequences. Validation-based checkpoint selection, held-out generated-pattern evaluation and prediction completed. The synthetic model cannot score real footage.
 - Real MEVA parking-lot footage was analyzed with its supplied actor annotations: the full-image setup matched 0/17 annotated samples; an explicitly focused region selected during development matched 7/17 at IoU ≥ 0.5. Remaining misses are recorded in the [public-video report](docs/PUBLIC-VIDEO.md); this is not independent field validation.
 - The larger YOLO11s-pose model matched 9/17 on the same focused development region. It took 54.84 seconds versus the earlier nano run's 26.24 seconds on this computer. The default remains unchanged; this comparison is not independent accuracy validation.
+- Commit `0e0aeb1` passed [hosted CV integration](https://github.com/aaryapatel09/carwatch/actions/runs/40425565468), reproducing 0/17, 7/17 and 9/17 for all three configurations. Its separate test runner was still installing media dependencies when this evidence was recorded.
+- The optional notification dispatcher completed a real HTTPS request to a local fixture server using test credentials, verified the acknowledgement and redacted journal, and rejected the fixture's certificate without its explicit test CA. No trust-store changes, external ntfy calls, camera activation or phone messages occurred.
 
 ## Regressions fixed
 
@@ -33,6 +35,7 @@ Story: load a recording, calibrate its view, run pose tracking, review saved evi
 - Recording fingerprints are calculated from the saved copy, so a source change during import cannot leave a fingerprint describing different bytes.
 - Video and live capture share one detection-region transform. Tests verify person boxes, wrists and annotated previews return to full-image coordinates, and legacy profiles retain full-frame defaults.
 - Tests and optional CV integration use isolated data directories. No user camera was activated.
+- Notification tests cover absent configuration, opt-in gating, durable evidence before enqueue, protected payloads, HTTP rejection/redirect/rate-limit behavior, retries/expiry/cooldown/deduplication, cancellation on Stop or worker exit, and an interrupted send remaining unconfirmed. Notifications remain off by default. These tests do not establish real mobile receipt.
 
 ## Outstanding evidence
 

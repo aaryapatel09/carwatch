@@ -10,6 +10,7 @@ import cv2
 import pandas as pd
 import streamlit as st
 
+from alerts import AlertConfig
 from config import CameraConfig
 from features import LABELS, NAMES
 from media import extract_track_clip
@@ -41,6 +42,11 @@ h1 {letter-spacing:-.055em;font-size:3.3rem!important}
 profiles_path = ROOT / "cameras.json"
 profiles = read_json(profiles_path, {"Driver side": CameraConfig().to_dict()})
 runs = list_runs()
+try:
+    AlertConfig.from_env()
+    alerts_configured = True
+except ValueError:
+    alerts_configured = False
 with st.sidebar:
     st.title("◉ Carwatch")
     st.caption("ACTIVITY LAB · LOCAL")
@@ -60,7 +66,12 @@ with st.sidebar:
     st.caption("PROCESSING STATUS")
     st.write("Local video + opt-in camera")
     st.caption(
-        "Camera access starts only when you press Start camera. Phone delivery is not configured."
+        "Camera access starts only when you press Start camera. "
+        + (
+            "Phone alerts require a separate opt-in for each session."
+            if alerts_configured
+            else "Phone delivery is not configured."
+        )
     )
     st.divider()
     st.caption("Research prototype. Activity cues are not a safety assessment.")
@@ -341,7 +352,7 @@ elif page == "Live camera":
     monitor = local_monitor()
     st.title("Try a local camera")
     st.write(
-        "Connect a USB camera or use a local webcam to test activity cues. This view stays on this computer and does not send phone notifications."
+        "Connect a USB camera or use a local webcam to test activity cues. Video and snapshots stay on this computer. Optional phone alerts send only a short activity description and time."
     )
     camera = st.number_input("Local camera index", 0, 9, 0)
     profile = st.selectbox("Camera calibration", list(profiles))
@@ -349,10 +360,25 @@ elif page == "Live camera":
     consent = st.checkbox(
         "Start this camera and save event snapshots locally. I have permission to record this scene."
     )
+    phone_alerts = st.checkbox(
+        "Send text activity alerts to my configured private ntfy topic during this session.",
+        disabled=not alerts_configured,
+        value=False,
+    )
+    if not alerts_configured:
+        st.caption("Phone alerts are off. Configure a private ntfy topic before enabling them.")
+        st.link_button(
+            "Notification setup guide",
+            "https://github.com/aaryapatel09/carwatch/blob/master/docs/NOTIFICATIONS.md",
+        )
+    else:
+        st.caption(
+            "Service acceptance does not confirm phone receipt. Pending alerts are cancelled on Stop; an in-flight request may still reach the service."
+        )
     a, b = st.columns(2)
     if a.button("Start camera", type="primary", disabled=not consent):
         try:
-            monitor.start(camera, CameraConfig.from_dict(profiles[profile]), minutes)
+            monitor.start(camera, CameraConfig.from_dict(profiles[profile]), minutes, phone_alerts)
         except Exception as exc:
             st.error(str(exc))
     if b.button("Stop camera"):
@@ -371,6 +397,13 @@ elif page == "Live camera":
             st.error(state["error"])
         if state.get("warning"):
             st.warning(state["warning"])
+        if "alerts" in state:
+            st.write("Notification service attempts:", state["alerts"] or "No cues queued")
+            if state["alerts"].get("error"):
+                st.error(state["alerts"]["error"])
+            st.caption(
+                "Accepted means acknowledged by the service; delivery to your phone is unverified."
+            )
         if (
             state["status"] == "running"
             and state["last_frame"]

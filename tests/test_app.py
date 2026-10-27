@@ -25,6 +25,7 @@ for page in ['Analyze video','Live camera','Review & label','Train models','Sett
     assert not app.exception,(page,app.exception)
     if page=='Live camera':
         assert next(b for b in app.button if b.label=='Start camera').disabled
+        assert next(c for c in app.checkbox if c.label.startswith('Send text activity')).disabled
     if page=='Train models':
         assert next(b for b in app.button if b.label=='Train custom model').disabled
 app.sidebar.radio[0].set_value('Review & label').run(timeout=30)
@@ -35,12 +36,22 @@ assert not app.exception
 assert read_json(out/'windows.json')[0]['label']=='ordinary_activity'
 app.sidebar.radio[0].set_value('Train models').run(timeout=30)
 assert next(b for b in app.button if b.label=='Train custom model').disabled
+import os
+os.environ.update(CARWATCH_NTFY_PRIVATE='1', CARWATCH_NTFY_SERVER='https://notify.example.invalid', CARWATCH_NTFY_TOPIC='private-topic', CARWATCH_NTFY_TOKEN='fixture-token')
+app.sidebar.radio[0].set_value('Live camera').run(timeout=30)
+notification = next(c for c in app.checkbox if c.label.startswith('Send text activity'))
+assert not notification.disabled and not notification.value
+assert next(b for b in app.button if b.label=='Start camera').disabled
+assert not app.exception
 print('All app sections and review persistence passed; sample labels excluded from real training')
 """
     result = subprocess.run(
         [sys.executable, "-c", script],
         cwd=Path(__file__).resolve().parents[1],
-        env={**os.environ, "CARWATCH_DATA_DIR": str(tmp_path)},
+        env={
+            **{k: v for k, v in os.environ.items() if not k.startswith("CARWATCH_NTFY_")},
+            "CARWATCH_DATA_DIR": str(tmp_path),
+        },
         capture_output=True,
         text=True,
         timeout=90,

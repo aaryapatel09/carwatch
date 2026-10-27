@@ -49,7 +49,8 @@ class FakePose:
         ]
 
 
-def test_worker_activity_disk_evidence_and_disconnect(tmp_path, monkeypatch):
+@pytest.mark.parametrize("phone_alerts", [False, True])
+def test_worker_activity_disk_evidence_and_disconnect(tmp_path, monkeypatch, phone_alerts):
     cap = FakeCamera()
     clock = [0.0]
 
@@ -60,6 +61,29 @@ def test_worker_activity_disk_evidence_and_disconnect(tmp_path, monkeypatch):
     monkeypatch.setattr(live.time, "monotonic", tick)
     monkeypatch.setattr(live.cv2, "VideoCapture", lambda _: cap)
     monkeypatch.setattr(ultralytics, "YOLO", lambda _: FakePose())
+    notifications = []
+
+    class Dispatcher:
+        def __init__(self, config, path, stop_signal):
+            pass
+
+        def start(self):
+            pass
+
+        def enqueue(self, event_id, kind):
+            # Evidence is durable before anything is eligible for external delivery.
+            saved = read_json(tmp_path / "session.json")
+            assert any(e["id"] == event_id for e in saved["events"])
+            notifications.append((event_id, kind))
+
+        def snapshot(self):
+            return {"queued": len(notifications)}
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(live, "AlertDispatcher", Dispatcher)
+    monkeypatch.setattr(live.AlertConfig, "from_env", lambda: object())
     messages = Messages(2)
     live._camera_worker(
         0,
@@ -68,12 +92,14 @@ def test_worker_activity_disk_evidence_and_disconnect(tmp_path, monkeypatch):
         threading.Event(),
         messages,
         tmp_path,
+        phone_alerts,
     )
     state = read_json(tmp_path / "session.json")
     assert state["status"] == "error" and "stopped delivering" in state["error"]
     assert cap.released and state["frame"] is None and len(state["events"]) == 2
     assert all((tmp_path / e["image"]).is_file() for e in state["events"])
     assert messages.qsize() <= 2
+    assert len(notifications) == (2 if phone_alerts else 0)
 
 
 def test_worker_device_unavailable_and_pre_stopped(tmp_path, monkeypatch):

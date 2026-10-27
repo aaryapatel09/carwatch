@@ -8,4 +8,6 @@ Source recordings retain their original audio. Derived clips are silent. Source 
 
 Camera access requires the user's Start action. It runs in a separate process with a parent-enforced time limit and explicit Stop. A hardware failure or process kill may lose the most recent unsaved observation. No software result establishes safety.
 
+Optional ntfy notifications require environment configuration, confirmation of a private topic and explicit enablement when starting a live session. Keep tokens outside Git. The sender requires verified HTTPS and rejects redirects; it sends only fixed cue text and its UTC observation time. Journals omit the token, destination and media. Configure the service's topic permissions separately: a token or the local private-topic confirmation flag does not prove anonymous access is denied. The notification service and its mobile push providers have their own retention and access policies. See [notification setup](docs/NOTIFICATIONS.md). No real endpoint is configured by the repository.
+
 For a suspected vulnerability, use the repository's private vulnerability-reporting option if enabled. Do not put private recordings or credentials in a public issue. Until a private reporting channel is configured for a published repository, keep sensitive reports local.

@@ -39,6 +39,7 @@ GitHub CI uses this CPU setup. macOS uses the normal installation above.
 - Dataset split checks by recording group and exact video hash; duplicate-window and synthetic-data checks.
 - Optional real experimental model scoring on new video windows. Scores do not automatically trigger alerts.
 - Opt-in local USB/webcam monitor with explicit Start/Stop, a 1–10 minute session limit, local event snapshots, and delayed-frame status. Hardware capture has not been exercised on this machine.
+- Optional text-only ntfy alerts during explicitly enabled live sessions, with bounded retries, cue cooldowns, expiry and cancellation on Stop. Tested with a local HTTPS receiver; physical-phone receipt remains unverified. See [notification setup](docs/NOTIFICATIONS.md).
 - Local JSON/ZIP export, model cards, dataset fingerprints, camera settings, recording deletion, and model deletion.
 - Batch processing of multiple camera recordings under one session group. Views are processed independently, without cross-camera identity matching or synchronization.
 
@@ -48,7 +49,7 @@ GitHub CI uses this CPU setup. macOS uses the normal installation above.
 2. **Analyze video:** choose or save a camera profile; mark ground and handle image regions. Upload permissioned footage. Use one recording group for all cameras and clips from a filming session. Assign train/val/test before analysis. Green is the ground zone; amber is the handle region.
 3. **Review & label:** inspect event clips and save event feedback. In Training windows, prepare an annotated clip, check the selected track, and choose a human activity label. Event feedback and training labels are separate.
 4. **Train models:** review label counts and dataset checks. Train on actual reviewed recordings when ready. Real models appear in the model registry and the analysis selector.
-5. **Live camera:** explicitly start a local camera only when ready. It saves event snapshots and logs, not full video or audio. Stop manually or use the session time limit. Closing the tab does not stop an active session.
+5. **Live camera:** explicitly start a local camera only when ready. It saves event snapshots and logs, not full video or audio. Optional text alerts require a configured private topic and a separate checkbox. Stop manually or use the session time limit. Closing the tab does not stop an active session.
 6. **Settings:** manage local data. Active analyses and reviews are protected from deletion. Interrupted analyses are identified by their released process lock and can be deleted. Deleting a recording does not untrain an existing model; delete/retrain affected models separately.
 
 The optional integration example recording is a replay of a bundled Ultralytics example photo, explicitly marked `sample`. It verifies the CV pipeline but is **not** car-security validation and is excluded from real-data training.
@@ -96,11 +97,11 @@ Before field use, evaluate full independent recordings, including ordinary negat
 
 ## Data and privacy
 
-Everything is under `runtime/`, ignored by Git: uploaded source video, event/track clips, features, human labels, models, and manifests. Source audio is not included in derived clips but remains in the saved original. No face recognition, reidentification across cameras, external video upload, remote notification service, or weapon actuation is connected. Model downloads are inbound only. Camera workers run in a separate process with a parent-enforced time limit so Stop can terminate a blocked driver. Local files are not encrypted by this app; use device storage protection as appropriate. Data is retained until deletion in Settings.
+Local recording data is under `runtime/`, ignored by Git: uploaded source video, event/track clips, features, human labels, models, and manifests. Source audio is not included in derived clips but remains in the saved original. No face recognition, reidentification across cameras, external video upload, or weapon actuation is connected. Model downloads are inbound only. Optional notifications send a fixed cue description and UTC time to a user-configured service; they exclude media, camera names, location and track IDs. Credentials come from the environment and are not written to notification journals. Camera workers run in a separate process with a parent-enforced time limit so Stop can terminate a blocked driver or sender. Local files are not encrypted by this app; use device storage protection as appropriate. Recording data is retained until deletion in Settings; live-session journals and snapshots remain under `runtime/live/` until manually removed.
 
 ## Remaining product work
 
-This is a local research app with recorded-video analysis and an untested-on-hardware local camera monitor. Universal mounting, automotive power/temperature qualification, robust multi-camera live ingestion, authenticated remote access, LTE/offline behavior, phone push delivery, production retention/access controls, real behavior training, and field evaluation are not complete. No absence of alerts should be displayed as a guarantee of safety.
+This is a local research app with recorded-video analysis and an untested-on-hardware local camera monitor. Universal mounting, automotive power/temperature qualification, robust multi-camera live ingestion, authenticated remote access, LTE/offline behavior, verified physical-phone delivery, production retention/access controls, real behavior training, and field evaluation are not complete. The optional sender's service acknowledgement does not confirm phone receipt. No absence of alerts should be displayed as a guarantee of safety.
 
 ## License
 

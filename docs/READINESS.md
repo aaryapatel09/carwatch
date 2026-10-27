@@ -18,8 +18,9 @@ Target: a reproducible GitHub repository for the complete current Carwatch proto
 | CI definitions validate | Pinned official action revisions, least-privilege jobs, local actionlint check |
 | Hosted CI is green | Private repository created. Inspect [repository checks](https://github.com/aaryapatel09/carwatch/actions/workflows/ci.yml) and [CV integration](https://github.com/aaryapatel09/carwatch/actions/workflows/cv-integration.yml) for the commit being released; the initial CUDA installation failure prompted explicit CPU builds. |
 | Actual camera hardware works | **Not established: no physical camera activated** |
-| Behavior detection works on real independent footage | **Not established.** A public MEVA development probe documented missed people (0/17 full-frame; 7/17 with a region selected afterward). Independent intended-camera evaluation remains absent. |
-| Universal mounting, power, heat, LTE and phone delivery work | **Not implemented or validated** |
+| Behavior detection works on real independent footage | **Not established.** A public MEVA development probe documented missed people (0/17 full-frame; 7/17 with a region selected afterward; 9/17 with a larger detector on that region). Independent intended-camera evaluation remains absent. |
+| Notification sending software works | Optional live-session ntfy sender: local HTTPS acknowledgement, TLS rejection, retry/cooldown/expiry, cancellation, interrupted-send uncertainty and redaction checks. No real service or phone tested. |
+| Universal mounting, power, heat, LTE and phone receipt work | **Not implemented or validated on hardware** |
 | “100% perfect” | **Not a property that finite testing can prove** |
 
 ## Next evidence needed
